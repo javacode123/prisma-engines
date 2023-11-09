@@ -1,50 +1,59 @@
 name: Rust
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: 'Commit to build'
+        required: true
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+
+    runs-on: ${{ matrix.os }}
+
     strategy:
       matrix:
         include:
-          - target: x86_64-unknown-linux-gnu
-            platform: linux/amd64
-          - target: aarch64-unknown-linux-gnu
-            platform: linux/arm64
-          - target: x86_64-pc-windows-msvc
-            platform: windows/amd64
-          - target: aarch64-pc-windows-msvc
-            platform: windows/arm64
-          - target: x86_64-apple-darwin
-            platform: darwin/amd64
-          - target: aarch64-apple-darwin
-            platform: darwin/arm64
+          # - os: ubuntu-latest
+          #   rust: stable
+          #   target: x86_64-unknown-linux-gnu
+          - os: ubuntu-latest
+            rust: stable
+            target: aarch64-unknown-linux-gnu
+          # - os: windows-latest
+          #   rust: stable-msvc
+          #   target: x86_64-pc-windows-msvc
+          - os: windows-latest
+            rust: stable-msvc
+            target: aarch64-pc-windows-msvc
+          # - os: macos-latest
+          #   rust: stable
+          #   target: x86_64-apple-darwin
+          - os: macos-latest
+            rust: stable
+            target: aarch64-apple-darwin
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        with:
+          ref: ${{ github.event.inputs.commit }}
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
       - name: Build
-        run: |
-          echo "FROM rust:1.54" > Dockerfile
-          echo "WORKDIR /usr/src/myapp" >> Dockerfile
-          echo "COPY . ." >> Dockerfile
-          echo "RUN rustup target add ${{ matrix.target }}" >> Dockerfile
-          echo "RUN cargo build --verbose --release -p schema-engine-cli --target ${{ matrix.target }}" >> Dockerfile
-          docker buildx create --use
-          docker buildx build --platform ${{ matrix.platform }} --output type=local,dest=./target --file Dockerfile .
+        run: cross build --verbose --release -p schema-engine-cli --target ${{ matrix.target }}
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: binaries
           path: |
-            ./target/*
+            ${{ github.workspace }}/target/release/*

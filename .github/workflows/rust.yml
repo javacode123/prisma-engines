@@ -51,3 +51,9 @@ jobs:
           override: true
       - name: Build
         run: cargo build --verbose --release -p schema-engine-cli --target ${{ matrix.target }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: binaries
+          path: |
+            ${{ github.workspace }}/target/release/*

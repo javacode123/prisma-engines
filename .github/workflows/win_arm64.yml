@@ -1,0 +1,47 @@
+name: win_arm64
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths-ignore:
+      - '.github/**'
+      - '!.github/workflows/benchmark.yml'
+      - '.buildkite/**'
+      - '*.md'
+      - 'LICENSE'
+      - 'CODEOWNERS'
+      - 'renovate.json'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: 'main'
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: aarch64-pc-windows-msvc
+          override: true
+      - name: Build
+        run: |
+          cargo install cross
+          cross build --verbose --release -p schema-engine-cli --target aarch64-pc-windows-msvc
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: binaries
+          path: |
+            ${{ github.workspace }}/target/release/*.exe
+            ${{ github.workspace }}/target/release/*.dll

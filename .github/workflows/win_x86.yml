@@ -1,0 +1,45 @@
+name: win_x86
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths-ignore:
+      - '.github/**'
+      - '!.github/workflows/benchmark.yml'
+      - '.buildkite/**'
+      - '*.md'
+      - 'LICENSE'
+      - 'CODEOWNERS'
+      - 'renovate.json'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: 'main'
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: x86_64-pc-windows-msvc
+      
+      - name: Build
+        run: cargo build --verbose --release -p schema-engine-cli --target x86_64-pc-windows-msvc
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: binaries
+          path: |
+            ${{ github.workspace }}/target/x86_64-pc-windows-msvc/release/*.exe
+            ${{ github.workspace }}/target/x86_64-pc-windows-msvc/release/*.dll

@@ -35,13 +35,11 @@ jobs:
           override: true
       - name: Build
         run: |
-          cargo install cross
-          cross build --verbose --release -p schema-engine-cli --target aarch64-pc-windows-msvc
+          cargo build --verbose --release -p schema-engine-cli --target aarch64-pc-windows-msvc
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: binaries
-          path: |
-            ${{ github.workspace }}/target/release/*.exe
-            ${{ github.workspace }}/target/release/*.dll
+          path: 
+            ${{ github.workspace }}/target/x86_64-pc-windows-msvc/release/schema*

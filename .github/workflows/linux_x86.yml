@@ -41,4 +41,4 @@ jobs:
         with:
           name: binaries
           path: |
-            ${{ github.workspace }}/target/x86_64-unknown-linux-gnu/release/schema-engine
+            ${{ github.workspace }}/target/x86_64-unknown-linux-gnu/release/schema*

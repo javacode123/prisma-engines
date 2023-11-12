@@ -35,10 +35,17 @@ jobs:
           override: true
       - name: Build
         run: | 
+          curl -O https://www.openssl.org/source/openssl-1.1.0f.tar.gz
+          tar xf openssl-1.1.0f.tar.gz
+          cd openssl-1.1.0f
+          export CC=...
+          ./Configure --prefix=... linux-x86_64 -fPIC
+          make -j$(nproc)
+          make install
           cargo build --verbose --release -p schema-engine-cli --target aarch64-unknown-linux-gnu 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: binaries
           path: |
-            ${{ github.workspace }}/target/aarch64-unknown-linux-gnu/release/schema-engine
+            ${{ github.workspace }}/target/aarch64-unknown-linux-gnu/release/schema*

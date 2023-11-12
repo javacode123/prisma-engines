@@ -1,4 +1,4 @@
-name: win_x86
+name: drawin_x86
 on:
   push:
     branches:
@@ -19,7 +19,7 @@ env:
 jobs:
   build:
 
-    runs-on: windows-latest
+    runs-on: macos-latest
 
     steps:
       - name: Checkout code
@@ -31,14 +31,14 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-          target: x86_64-pc-windows-msvc
+          target: x86_64-apple-darwin
       
       - name: Build
-        run: cargo build --verbose --release -p schema-engine-cli --target x86_64-pc-windows-msvc
+        run: cargo build --verbose --release -p schema-engine-cli --target x86_64-apple-darwin
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: binaries
-          path: 
-            ${{ github.workspace }}/target/x86_64-pc-windows-msvc/release/schema*
+          path: |
+            ${{ github.workspace }}/target/x86_64-apple-darwin/release/schema*

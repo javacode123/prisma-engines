@@ -1,0 +1,172 @@
+package main
+
+import (
+	"archive/zip"
+	"compress/gzip"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+)
+
+const (
+	// runnerid, https://github.com/javacode123/prisma-engines/actions/runs/{runnerId}}
+	runnerID = 6932478404
+	// 在 github 上设置 person access tokens > Tokens: https://github.com/settings/tokens
+	token     = "XXXXX"
+	owner     = "javacode123"
+	project   = "prisma-engines"
+	commit    = "4ce8f0e167b8453fe080782170f44d83b17ce11f"
+	artifacts = "https://api.github.com/repos/%s/%s/actions/artifacts"
+)
+
+type Artifact struct {
+	ArchiveDownloadURL string `json:"archive_download_url"`
+	Name               string `json:"name"`
+	WorkflowRun        struct {
+		ID int64 `json:"id"`
+	} `json:"workflow_run"`
+}
+
+type Response struct {
+	Artifacts []Artifact `json:"artifacts"`
+}
+
+func main() {
+	res := artifactListByRunnerID(owner, project, token, runnerID)
+	folder := localFolder(commit)
+	fmt.Printf("should download file count %d \n", len(res))
+	for _, artifact := range res {
+		storeArtiface(folder, token, artifact)
+	}
+
+	println("download success")
+}
+
+func buildReq(url string, token string) *http.Request {
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+	return req
+}
+
+func localFolder(commit string) string {
+	dir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	// If the directory does not exist, create the directory
+	if _, err := os.Stat(commit); os.IsNotExist(err) {
+		os.Mkdir(commit, 0755)
+	}
+	return dir + string(filepath.Separator) + commit + string(filepath.Separator)
+}
+
+func artifactListByRunnerID(owner, project, token string, runnerID int64) []Artifact {
+	req := buildReq(fmt.Sprintf(artifacts, owner, project), token)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+
+	defer resp.Body.Close()
+	var r Response
+	err = json.NewDecoder(resp.Body).Decode(&r)
+	if err != nil {
+		panic(err)
+	}
+
+	res := make([]Artifact, 0, len(r.Artifacts))
+	for _, v := range r.Artifacts {
+		if v.WorkflowRun.ID == runnerID {
+			res = append(res, v)
+		}
+	}
+
+	return res
+}
+
+func storeArtiface(dir, token string, artifact Artifact) {
+	fmt.Printf("start down load %s \n", artifact.Name)
+	req := buildReq(artifact.ArchiveDownloadURL, token)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		panic("unexpected status code: " + resp.Status)
+	}
+
+	contentDisposition := resp.Header.Get("Content-Disposition")
+	if !strings.HasPrefix(contentDisposition, "attachment") {
+		panic("unexpected content type: " + contentDisposition)
+	}
+
+	out, err := os.Create(dir + artifact.Name + ".zip")
+	if err != nil {
+		panic(err)
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	unzipFile(out.Name())
+	err = os.Remove(out.Name())
+	if err != nil {
+		panic(err)
+	}
+}
+
+func unzipFile(source string) {
+	fmt.Printf("start unzip %s \n", source)
+	zipReader, err := zip.OpenReader(source)
+	if err != nil {
+		panic(err)
+	}
+	defer zipReader.Close()
+
+	for _, file := range zipReader.File {
+		fileReader, err := file.Open()
+		if err != nil {
+			panic(err)
+		}
+		defer fileReader.Close()
+
+		extractedFilePath := filepath.Join(strings.Split(source, ".")[0], file.Name)
+
+		if file.FileInfo().IsDir() {
+			os.MkdirAll(extractedFilePath, os.ModePerm)
+		} else {
+			if err = os.MkdirAll(filepath.Dir(extractedFilePath), os.ModePerm); err != nil {
+				panic(err)
+			}
+			extractedFile, err := os.OpenFile(extractedFilePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
+			if err != nil {
+				panic(err)
+			}
+			defer extractedFile.Close()
+
+			// 压缩文件为 .gz 格式
+			fmt.Printf("start gzip %s \n", file.Name)
+			gzWriter := gzip.NewWriter(extractedFile)
+			defer gzWriter.Close()
+
+			_, err = io.Copy(gzWriter, fileReader)
+			if err != nil {
+				panic(err)
+			}
+
+			// 修改文件后缀为 .gz
+			os.Rename(extractedFilePath, extractedFilePath+".gz")
+		}
+	}
+}

@@ -209,14 +209,14 @@ mod tests {
     use crate::{commands, json_rpc::types::*, CoreResult};
     use tracing_subscriber;
     // provider = "postgres"
-    // url      = "postgres://postgres:123456,zjl@localhost:5432/zjl"
+    // url      = ""
     #[tokio::test]
     async fn introspect() {
         let schema = String::from(
             r##"
 datasource db {
   provider = "mysql"
-  url      = "mysql://root:123456,zjl@localhost:3306/zjl"
+  url      = ""
 }"##,
         );
         let api = match schema_api(Some(schema.clone()), None) {
@@ -252,7 +252,7 @@ datasource db {
             r##"
 datasource db {
   provider = "mysql"
-  url      = "mysql://root:123456,zjl@localhost:3306/zjl"
+  url      = ""
 }
 
 model User {
@@ -305,7 +305,7 @@ model Post {
             r##"
 datasource db {
   provider = "mysql"
-  url      = "mysql://root:123456,zjl@localhost:3306/zjl"
+  url      = ""
 }
 
 /// table comment

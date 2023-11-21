@@ -215,8 +215,8 @@ mod tests {
         let schema = String::from(
             r##"
 datasource db {
-  provider = "mysql"
-  url      = ""
+  provider = "postgresql"
+  url      = "*"
 }"##,
         );
         let api = match schema_api(Some(schema.clone()), None) {
@@ -251,30 +251,27 @@ datasource db {
         let s = String::from(
             r##"
 datasource db {
-  provider = "mysql"
-  url      = ""
+  provider = "postgresql"
+  url      = "*"
+}
+model Post {
+  id       Int     @id @default(autoincrement())
+  title    String
+  content  String?
+  authorID Int 
+  /// comment
+  titl2   String
+  User     User    @relation(fields: [authorID], references: [id])
+
 }
 
 model User {
-  /// id comment
-  id    Int     @id @default(autoincrement())
-  // email comment
-  email Int  @unique
-  // name comment
-   name  String?
-  // posts comment
-  posts Post[]
-}
-
-// table comment
-model Post {
-    // id comment
-  id        Int     @id @default(autoincrement())
-  title     String // id comment
-  content   String?
-  published Boolean @default(false)
-  author    User    @relation(fields: [authorID], references: [id])
-  authorID  Int
+  id      Int     @id @default(autoincrement())
+  email   Int     @unique
+  name    String?
+  comment String?
+  c       String?
+  Post    Post[]
 }
         "##,
         );
@@ -289,7 +286,7 @@ model Post {
 
         let params = SchemaPushInput { schema, force: false };
 
-        let res = match api.schema_push(params).await.map_err(|err| panic!("{}", err)) {
+        let res = match api.schema_push(params).await.map_err(|err| println!("{}", err)) {
             Ok(introspected) => introspected,
             Err(e) => {
                 panic!("schema_api meet err {:?}", e)

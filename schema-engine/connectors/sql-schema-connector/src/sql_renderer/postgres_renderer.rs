@@ -39,6 +39,7 @@ impl PostgresFlavour {
 
     fn render_column_comment(&self, table_name: String, column: TableColumnWalker<'_>) -> String {
         let column_name = Quoted::postgres_ident(column.name());
+        let table_name = Quoted::postgres_ident(table_name);
         let comment: String = if let Some(comment) = column.description() {
             format!("COMMENT ON COLUMN {table_name}.{column_name} IS '{comment}' ;")
         } else {
@@ -244,6 +245,7 @@ impl SqlRenderer for PostgresFlavour {
         let mut before_statements = Vec::new();
         let mut after_statements = Vec::new();
         let tables = schemas.walk(*table_ids);
+        let mut comment_lines = Vec::new();
 
         for change in changes {
             match change {
@@ -281,6 +283,7 @@ impl SqlRenderer for PostgresFlavour {
                     let col_sql = self.render_column(column);
 
                     lines.push(format!("ADD COLUMN {col_sql}"));
+                    comment_lines.push(self.render_column_comment(column.table().name().to_string(), column))
                 }
                 TableChange::DropColumn { column_id } => {
                     let name = self.quote(schemas.previous.walk(*column_id).name());
@@ -310,6 +313,8 @@ impl SqlRenderer for PostgresFlavour {
 
                     let col_sql = self.render_column(columns.next);
                     lines.push(format!("ADD COLUMN {col_sql}"));
+                    comment_lines
+                        .push(self.render_column_comment(columns.next.table().name().to_string(), columns.next))
                 }
             };
         }
@@ -317,9 +322,12 @@ impl SqlRenderer for PostgresFlavour {
         if lines.is_empty() {
             return Vec::new();
         }
+        comment_lines = comment_lines.into_iter().filter(|s| !s.is_empty()).collect();
 
         if self.is_cockroachdb() {
-            let mut out = Vec::with_capacity(before_statements.len() + after_statements.len() + lines.len());
+            let mut out = Vec::with_capacity(
+                before_statements.len() + after_statements.len() + lines.len() + comment_lines.len(),
+            );
             out.extend(before_statements);
             for line in lines {
                 out.push(format!(
@@ -329,6 +337,7 @@ impl SqlRenderer for PostgresFlavour {
                 ))
             }
             out.extend(after_statements);
+            out.extend(comment_lines);
             out
         } else {
             let alter_table = format!(
@@ -337,11 +346,13 @@ impl SqlRenderer for PostgresFlavour {
                 lines.join(",\n")
             );
 
-            before_statements
+            let mut out: Vec<String> = before_statements
                 .into_iter()
                 .chain(std::iter::once(alter_table))
                 .chain(after_statements)
-                .collect()
+                .collect();
+            out.extend(comment_lines);
+            out
         }
     }
 
@@ -426,7 +437,7 @@ impl SqlRenderer for PostgresFlavour {
 
         let column_comment: String = table
             .columns()
-            .map(|column| self.render_column_comment(format!("{table_name}"), column))
+            .map(|column| self.render_column_comment(table_name.to_string(), column))
             .join("\n");
 
         format!("CREATE TABLE {table_name} (\n{columns}{pk}\n); {table_comment}; {column_comment}")

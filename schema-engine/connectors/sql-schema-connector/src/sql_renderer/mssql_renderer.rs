@@ -220,11 +220,64 @@ impl SqlRenderer for MssqlFlavour {
             String::new()
         };
 
+        let mut table_comment = String::new();
+        if let Some(comment) = table.description() {
+            table_comment = format!(
+                r#"EXEC sp_addextendedproperty 
+                    @name = N'MS_Description', 
+                    @value = '{}', 
+                    @level0type = N'SCHEMA', 
+                    @level0name = 'dbo', 
+                    @level1type = N'TABLE', 
+                    @level1name = '{}';"#,
+                comment,
+                table.name()
+            )
+        }
+        let column_comment: String = table
+            .columns()
+            .map(|column| {
+                if let Some(col_comment) = column.description() {
+                    format!(
+                        r#"EXEC sp_addextendedproperty 
+                    @name = N'MS_Description', 
+                    @value = '{}', 
+                    @level0type = N'SCHEMA', 
+                    @level0name = 'dbo', 
+                    @level1type = N'TABLE', 
+                    @level1name = '{}',
+                    @level2type = N'COLUMN', 
+                    @level2name = '{}';"#,
+                        col_comment,
+                        table.name(),
+                        column.name()
+                    )
+                } else {
+                    String::new()
+                }
+            })
+            .join("");
+
+        let mut comment = String::new();
+        if !table_comment.is_empty() || !column_comment.is_empty() {
+            comment = format!(
+                r#"
+                    BEGIN TRY
+                        {} {}
+                    END TRY
+                    BEGIN CATCH
+                        -- 错误处理代码，如果你想要完全忽略错误，你可以让这里什么都不做
+                    END CATCH
+                "#,
+                table_comment, column_comment
+            );
+        }
+
         formatdoc!(
             r#"
             CREATE TABLE {table_name} (
                 {columns}{primary_key}{constraints}
-            )"#,
+            ); {comment}"#,
         )
     }
 

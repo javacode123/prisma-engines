@@ -203,7 +203,8 @@ impl<'a> SqlSchemaDescriber<'a> {
         let select = r#"
             SELECT
                 tbl.name AS table_name,
-                SCHEMA_NAME(tbl.schema_id) AS namespace
+                SCHEMA_NAME(tbl.schema_id) AS namespace,
+                CONVERT(VARCHAR(255),(SELECT value FROM fn_listextendedproperty(NULL, 'schema', 'dbo', 'table', tbl.name, NULL, NULL))) AS table_comment
             FROM sys.tables tbl
             WHERE tbl.is_ms_shipped = 0 AND tbl.type = 'U'
             ORDER BY tbl.name;
@@ -214,19 +215,25 @@ impl<'a> SqlSchemaDescriber<'a> {
         let names = rows
             .into_iter()
             .filter(|row| sql_schema.namespaces.contains(&row.get_expect_string("namespace")))
-            .map(|row| (row.get_expect_string("table_name"), row.get_expect_string("namespace")))
+            .map(|row| {
+                (
+                    row.get_expect_string("table_name"),
+                    row.get_expect_string("namespace"),
+                    row.get_string("table_comment"),
+                )
+            })
             .collect::<Vec<_>>();
 
         let mut map = IndexMap::new();
 
-        for (table_name, namespace) in names {
+        for (table_name, namespace, table_comment) in names {
             let namespace_id = match sql_schema.get_namespace_id(&namespace) {
                 Some(id) => id,
                 None => continue,
             };
 
             let cloned_name = table_name.clone();
-            let id = sql_schema.push_table(table_name, namespace_id, None);
+            let id = sql_schema.push_table(table_name, namespace_id, table_comment);
             map.insert((namespace, cloned_name), id);
         }
 
@@ -282,10 +289,12 @@ impl<'a> SqlSchemaDescriber<'a> {
                 convert(int, CASE
                     WHEN c.system_type_id IN (40, 41, 42, 43, 58, 61) THEN NULL
                     ELSE ODBCSCALE(c.system_type_id, c.scale) END) AS numeric_scale,
-                OBJECT_SCHEMA_NAME(c.object_id) AS namespace
+                OBJECT_SCHEMA_NAME(c.object_id) AS namespace,
+                 CONVERT(VARCHAR(255), prop.value) AS column_description
             FROM sys.columns c
                     INNER JOIN sys.objects obj ON c.object_id = obj.object_id
                     INNER JOIN sys.types typ ON c.user_type_id = typ.user_type_id
+                    LEFT JOIN sys.extended_properties prop ON c.object_id = prop.major_id AND c.column_id = prop.minor_id AND prop.name = 'MS_Description'
             WHERE obj.is_ms_shipped = 0
             ORDER BY table_name, COLUMNPROPERTY(c.object_id, c.name, 'ordinal');
         "#};
@@ -297,6 +306,7 @@ impl<'a> SqlSchemaDescriber<'a> {
         for col in rows {
             let namespace = col.get_expect_string("namespace");
             let table_name = col.get_expect_string("table_name");
+            let comment = col.get_string("column_description");
 
             let table_id = sql_schema.table_walker_ns(&namespace, &table_name);
             let view_id = sql_schema.view_walker_ns(&namespace, &table_name);
@@ -395,7 +405,7 @@ impl<'a> SqlSchemaDescriber<'a> {
                 name,
                 tpe,
                 auto_increment,
-                description: None,
+                description: comment,
             };
 
             match container_id {

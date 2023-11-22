@@ -208,16 +208,22 @@ mod tests {
     use super::*;
     use crate::{commands, json_rpc::types::*, CoreResult};
     use tracing_subscriber;
-    // provider = "postgres"
-    // url      = ""
+
+    struct Case {
+        name: String,
+        push: String,
+        introspect: String,
+    }
+
     #[tokio::test]
     async fn introspect() {
+        tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).init();
         let schema = String::from(
             r##"
 datasource db {
-  provider = "postgresql"
-  url      = "*"
-}"##,
+  provider = "sqlserver"
+    url      = ""
+  }"##,
         );
         let api = match schema_api(Some(schema.clone()), None) {
             Ok(api) => api,
@@ -250,19 +256,21 @@ datasource db {
     async fn test_push() {
         let s = String::from(
             r##"
-datasource db {
-  provider = "postgresql"
-  url      = "*"
+            datasource db {
+  provider = "sqlserver"
+    url      = "xxx"
 }
 model Post {
+  /// Employee ID
   id       Int     @id @default(autoincrement())
+  /// Your comment here
   title    String
-  content  String?
-  authorID Int 
-  /// comment
-  titl2   String
+  authorID Int
+  /// content
+  c        String?
+  /// ccc
+  ccc        String?
   User     User    @relation(fields: [authorID], references: [id])
-
 }
 
 model User {
@@ -272,6 +280,16 @@ model User {
   comment String?
   c       String?
   Post    Post[]
+}
+
+/// comment 
+model F {
+/// comment email
+email   Int     @unique
+}
+
+model E {
+email   Int     @unique
 }
         "##,
         );

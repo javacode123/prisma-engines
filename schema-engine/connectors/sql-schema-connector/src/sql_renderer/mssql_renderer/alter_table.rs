@@ -34,6 +34,7 @@ pub(crate) fn create_statements(
         add_columns: Vec::new(),
         drop_columns: Vec::new(),
         column_mods: Vec::new(),
+        comments: Vec::new(),
     };
 
     constructor.into_statements()
@@ -49,6 +50,7 @@ struct AlterTableConstructor<'a> {
     add_columns: Vec<String>,
     drop_columns: Vec<String>,
     column_mods: Vec<String>,
+    comments: Vec<String>,
 }
 
 impl<'a> AlterTableConstructor<'a> {
@@ -142,6 +144,10 @@ impl<'a> AlterTableConstructor<'a> {
             ));
         }
 
+        if !self.comments.is_empty() {
+            statements.extend(self.comments)
+        }
+
         statements
     }
 
@@ -192,12 +198,65 @@ impl<'a> AlterTableConstructor<'a> {
     fn add_column(&mut self, column_id: TableColumnId) {
         let column = self.tables.next.schema.walk(column_id);
         self.add_columns.push(self.renderer.render_column(column));
+
+        if let Some(comment) = column.description() {
+            self.comments.push(format!(
+                "BEGIN TRY
+                    EXEC sp_addextendedproperty 
+                        @name = N'MS_Description', 
+                        @value = {},
+                        @level0type = N'SCHEMA', 
+                        @level0name = dbo, 
+                        @level1type = N'TABLE', 
+                        @level1name = {}, 
+                        @level2type = N'COLUMN', 
+                        @level2name = {}
+                END TRY
+                BEGIN CATCH
+                    EXEC sp_updateextendedproperty 
+                        @name = N'MS_Description', 
+                        @value = {},
+                        @level0type = N'SCHEMA', 
+                        @level0name = dbo, 
+                        @level1type = N'TABLE', 
+                        @level1name = {}, 
+                        @level2type = N'COLUMN', 
+                        @level2name = {}
+                END CATCH
+                ",
+                comment,
+                column.table().name(),
+                column.name(),
+                comment,
+                column.table().name(),
+                column.name(),
+            ));
+        }
     }
 
     fn drop_column(&mut self, column_id: TableColumnId) {
-        let name = self.renderer.quote(self.tables.previous.walk(column_id).name());
+        let column = self.tables.previous.walk(column_id);
+        let name = self.renderer.quote(column.name());
 
         self.drop_columns.push(format!("{name}"));
+        // 无脑删除 comment, 忽略异常
+        self.comments.push(format!(
+            "BEGIN TRY
+                EXEC sp_dropextendedproperty
+                @name = N'MS_Description',
+                @level0type = N'SCHEMA',
+                @level0name = 'dbo',
+                @level2type = N'COLUMN',
+                @level2name = {},
+                @level1type = N'TABLE', 
+                @level1name = {};
+            END TRY
+            BEGIN CATCH
+                -- 错误处理代码，如果你想要完全忽略错误，你可以让这里什么都不做
+            END CATCH",
+            column.name(),
+            column.table().name()
+        ));
     }
 
     fn drop_and_recreate_column(&mut self, columns: MigrationPair<TableColumnId>) {

@@ -86,7 +86,8 @@ impl<'a> AlterTableConstructor<'a> {
                     self.alter_column(*column_id, changes);
                 }
                 TableChange::AlterComment { .. } => {
-                    // TODOzjl
+                    // 更新表注释
+                    self.alter_table_comment();
                 }
             };
         }
@@ -207,24 +208,24 @@ impl<'a> AlterTableConstructor<'a> {
                 "BEGIN TRY
                     EXEC sp_addextendedproperty 
                         @name = N'MS_Description', 
-                        @value = {},
+                        @value = '{}',
                         @level0type = N'SCHEMA', 
                         @level0name = dbo, 
                         @level1type = N'TABLE', 
-                        @level1name = {}, 
+                        @level1name = '{}', 
                         @level2type = N'COLUMN', 
-                        @level2name = {}
+                        @level2name = '{}';
                 END TRY
                 BEGIN CATCH
                     EXEC sp_updateextendedproperty 
                         @name = N'MS_Description', 
-                        @value = {},
+                        @value = '{}',
                         @level0type = N'SCHEMA', 
                         @level0name = dbo, 
                         @level1type = N'TABLE', 
-                        @level1name = {}, 
+                        @level1name = '{}', 
                         @level2type = N'COLUMN', 
-                        @level2name = {}
+                        @level2name = '{}';
                 END CATCH
                 ",
                 comment,
@@ -250,9 +251,9 @@ impl<'a> AlterTableConstructor<'a> {
                 @level0type = N'SCHEMA',
                 @level0name = 'dbo',
                 @level2type = N'COLUMN',
-                @level2name = {},
+                @level2name = '{}',
                 @level1type = N'TABLE', 
-                @level1name = {};
+                @level1name = '{}';
             END TRY
             BEGIN CATCH
                 -- 错误处理代码，如果你想要完全忽略错误，你可以让这里什么都不做
@@ -311,6 +312,136 @@ impl<'a> AlterTableConstructor<'a> {
                         nullability = nullability,
                     ));
                 }
+                MsSqlAlterColumn::AlterComment => {
+                    match columns.previous.description() {
+                        Some(_) => {
+                            // 之前就有 comment
+                            match columns.next.description() {
+                                Some(comment) => {
+                                    // 更新 comment
+                                    self.comments.push(format!(
+                                        r##"
+                                        EXEC sp_updateextendedproperty 
+                                            @name = N'MS_Description', 
+                                            @value = '{}', 
+                                            @level0type = N'SCHEMA', 
+                                            @level0name = 'dbo', 
+                                            @level1type = N'TABLE', 
+                                            @level1name = '{}', 
+                                            @level2type = N'COLUMN', 
+                                            @level2name = '{}';
+                                    "##,
+                                        comment,
+                                        self.tables.next.name(),
+                                        columns.next.name()
+                                    ))
+                                }
+                                None => {
+                                    // 删除注释
+                                    self.comments.push(format!(
+                                        r##"
+                                        EXEC sp_dropextendedproperty 
+                                            @name = N'MS_Description', 
+                                            @level0type = N'SCHEMA', 
+                                            @level0name = 'dbo', 
+                                            @level1type = N'TABLE', 
+                                            @level1name = '{}', 
+                                            @level2type = N'COLUMN', 
+                                            @level2name = '{}';
+                                    "##,
+                                        self.tables.next.name(),
+                                        columns.next.name()
+                                    ))
+                                }
+                            }
+                        }
+                        None => {
+                            // 无 comment
+                            match columns.next.description() {
+                                Some(comment) => {
+                                    // 新增 comment
+                                    self.comments.push(format!(
+                                        r##"
+                                        EXEC sp_addextendedproperty 
+                                            @name = N'MS_Description', 
+                                            @value = '{}', 
+                                            @level0type = N'SCHEMA', 
+                                            @level0name = 'dbo', 
+                                            @level1type = N'TABLE', 
+                                            @level1name = '{}', 
+                                            @level2type = N'COLUMN', 
+                                            @level2name = '{}';
+                                    "##,
+                                        comment,
+                                        self.tables.next.name(),
+                                        columns.next.name()
+                                    ))
+                                }
+                                None => {
+                                    // 不存在 case
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn alter_table_comment(&mut self) {
+        match self.tables.previous.description() {
+            Some(_) => {
+                //之前存在 comment
+                match self.tables.next.description() {
+                    Some(comment) => {
+                        // 更新
+                        self.comments.push(format!(
+                            r##"EXEC sp_updateextendedproperty 
+                                        @name = N'MS_Description', 
+                                        @value = '{}', 
+                                        @level0type = N'SCHEMA', 
+                                        @level0name = 'dbo', 
+                                        @level1type = N'TABLE', 
+                                        @level1name = '{}';"##,
+                            comment.trim(),
+                            self.tables.next.name(),
+                        ))
+                    }
+                    None => {
+                        // 删除
+                        self.comments.push(format!(
+                            r##"EXEC sp_dropextendedproperty 
+                                    @name = N'MS_Description', 
+                                    @level0type = N'SCHEMA', 
+                                    @level0name = 'dbo', 
+                                    @level1type = N'TABLE', 
+                                    @level1name = '{}';"##,
+                            self.tables.next.name(),
+                        ))
+                    }
+                }
+            }
+            None => {
+                // 之前不存在 comment
+                match self.tables.next.description() {
+                    Some(comment) => {
+                        // 添加
+                        self.comments.push(format!(
+                            r##"EXEC sp_addextendedproperty 
+                                        @name = N'MS_Description', 
+                                        @value = '{}', 
+                                        @level0type = N'SCHEMA', 
+                                        @level0name = 'dbo', 
+                                        @level1type = N'TABLE', 
+                                        @level1name = '{}';"##,
+                            comment.trim(),
+                            self.tables.next.name(),
+                        ))
+                    }
+                    None => {
+                        // 删除
+                    }
+                }
             }
         }
     }
@@ -321,6 +452,7 @@ enum MsSqlAlterColumn {
     DropDefault { constraint_name: String },
     SetDefault(DefaultValue),
     Modify,
+    AlterComment,
 }
 
 fn expand_alter_column(
@@ -328,6 +460,12 @@ fn expand_alter_column(
     column_changes: &ColumnChanges,
 ) -> Vec<MsSqlAlterColumn> {
     let mut changes = Vec::new();
+
+    if column_changes.only_comment_changed() {
+        // 此行只更新了 comment
+        changes.push(MsSqlAlterColumn::AlterComment);
+        return changes;
+    }
 
     // Default value changes require us to re-create the constraint, which we
     // must do before modifying the column.
@@ -349,6 +487,11 @@ fn expand_alter_column(
         }
     } else {
         changes.push(MsSqlAlterColumn::Modify);
+    }
+
+    if column_changes.comment_changed() {
+        // 伴随更新了 comment
+        changes.push(MsSqlAlterColumn::AlterComment);
     }
 
     changes

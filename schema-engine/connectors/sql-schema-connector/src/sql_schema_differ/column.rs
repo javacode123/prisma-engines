@@ -204,6 +204,14 @@ impl ColumnChanges {
         self.changes.contains(ColumnChange::Default)
     }
 
+    pub(crate) fn comment_changed(&self) -> bool {
+        self.changes.contains(ColumnChange::CommentChanged)
+    }
+
+    pub(crate) fn only_comment_changed(&self) -> bool {
+        self.changes == ColumnChange::CommentChanged
+    }
+
     pub(crate) fn only_default_changed(&self) -> bool {
         self.changes == ColumnChange::Default
     }

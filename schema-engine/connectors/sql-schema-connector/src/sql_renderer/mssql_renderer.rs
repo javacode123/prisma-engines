@@ -259,7 +259,8 @@ impl SqlRenderer for MssqlFlavour {
             .join("");
 
         let mut comment = String::new();
-        if !table_comment.is_empty() || !column_comment.is_empty() {
+        if !table_name.to_string().contains("_prisma_new") && (!table_comment.is_empty() || !column_comment.is_empty())
+        {
             comment = format!(
                 r#"
                     BEGIN TRY

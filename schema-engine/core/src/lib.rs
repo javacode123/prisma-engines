@@ -324,6 +324,10 @@ model User {
                 provider: "postgres".to_string(),
                 url: "postgres://postgres:123456,zjl@localhost:5432/zjl".to_string(),
             },
+            DBConf {
+                provider:"sqlserver".to_string(),
+                url:"sqlserver://localhost:1433;database=zjl;user=SA;password=123456,zjl;trustServerCertificate=true;socket_timeout=60;isolationLevel=READ UNCOMMITTED".to_string(),
+            }
         ];
         let cases = vec![
             Case {
@@ -378,36 +382,32 @@ model User {
         tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).init();
         let source = r##"
         datasource db {
-          provider = "postgres"
-          url      = "postgres://postgres:123456,zjl@localhost:5432/zjl"
+          provider = "sqlserver"
+          url      = "sqlserver://localhost:1433;database=zjl;user=SA;password=123456,zjl;trustServerCertificate=true;socket_timeout=60;isolationLevel=READ UNCOMMITTED"
         }
-
-        /// table comment
+        /// use comment
         model User {
-          id      Int    @id @default(autoincrement())
-          
+          /// id comment
+          id      Int     @id 
+          /// email comment
+          email   Int     @unique
+          /// name commen
+          name    String?
           /// comment
-          comment Int?
-          
-          ee      String
-        }
-        
-        
-        model U {
-          id      Int    @id @default(autoincrement())
-          email   Int
-          comment Int
-          ee      String
+          comment String
         }
         "##;
         let res = test_push(&source).await;
         println!("\nout_put:\n{:?}\n", res);
 
-        // let intro_res = test_introspect(source).await;
-        // println!(
-        //     "introspect_res:\n{}\nwarnings:\n{:?}",
-        //     intro_res.datamodel, intro_res.warnings
-        // );
+        let intro_res = test_introspect(&r##"datasource db {
+              provider = "sqlserver"
+              url      = "sqlserver://localhost:1433;database=zjl;user=SA;password=123456,zjl;trustServerCertificate=true;socket_timeout=60;isolationLevel=READ UNCOMMITTED"
+        }"##.to_string()).await;
+        println!(
+            "introspect_res:\n{}\nwarnings:\n{:?}",
+            intro_res.datamodel, intro_res.warnings
+        );
     }
 
     async fn test_introspect(schema: &String) -> IntrospectResult {

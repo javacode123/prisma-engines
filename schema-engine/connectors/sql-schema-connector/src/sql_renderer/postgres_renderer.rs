@@ -303,6 +303,7 @@ impl SqlRenderer for PostgresFlavour {
                         &mut lines,
                         &mut after_statements,
                         self,
+                        &mut comment_lines,
                     );
                 }
                 TableChange::DropAndRecreateColumn { column_id, changes: _ } => {
@@ -316,16 +317,23 @@ impl SqlRenderer for PostgresFlavour {
                     comment_lines
                         .push(self.render_column_comment(columns.next.table().name().to_string(), columns.next))
                 }
-                TableChange::AlterComment { .. } => {
-                    //TODO zjl
-                }
+                TableChange::AlterComment { .. } => comment_lines.push(format!(
+                    "COMMENT ON TABLE \"{table_name}\" IS '{table_comment}';",
+                    table_name = tables.next.name(),
+                    table_comment = if let Some(comment) = tables.next.description() {
+                        comment
+                    } else {
+                        ""
+                    }
+                )),
             };
         }
 
-        if lines.is_empty() {
-            return Vec::new();
-        }
         comment_lines = comment_lines.into_iter().filter(|s| !s.is_empty()).collect();
+        if lines.is_empty() {
+            // 当 lines 为空时，只处理 comment
+            return comment_lines;
+        }
 
         if self.is_cockroachdb() {
             let mut out = Vec::with_capacity(
@@ -440,7 +448,7 @@ impl SqlRenderer for PostgresFlavour {
 
         let column_comment: String = table
             .columns()
-            .map(|column| self.render_column_comment(table_name.to_string(), column))
+            .map(|column| self.render_column_comment(table.name().to_string(), column))
             .join("\n");
 
         format!("CREATE TABLE {table_name} (\n{columns}{pk}\n); {table_comment}; {column_comment}")
@@ -720,6 +728,7 @@ fn render_alter_column(
     clauses: &mut Vec<String>,
     after_statements: &mut Vec<String>,
     flavour: &PostgresFlavour,
+    comment_lines: &mut Vec<String>,
 ) {
     let steps = expand_alter_column(columns, column_changes);
     let table_name = QuotedWithPrefix::pg_from_table_walker(columns.previous.table());
@@ -781,6 +790,16 @@ fn render_alter_column(
                     "ALTER SEQUENCE {sequence_name} OWNED BY {table_name}.{column_name}",
                 ));
             }
+            PostgresAlterColumn::AddComment => comment_lines.push(format!(
+                "COMMENT ON COLUMN {}.{} IS '{}';",
+                table_name,
+                column_name,
+                if let Some(comment) = columns.next.description() {
+                    comment
+                } else {
+                    ""
+                }
+            )),
         }
     }
 }
@@ -826,9 +845,7 @@ fn expand_alter_column(
                     changes.push(PostgresAlterColumn::AddSequence)
                 }
             }
-            ColumnChange::CommentChanged => {
-                println!("需要实现注释变化")
-            }
+            ColumnChange::CommentChanged => changes.push(PostgresAlterColumn::AddComment),
         }
     }
 
@@ -850,6 +867,7 @@ enum PostgresAlterColumn {
     SetNotNull,
     /// Add an auto-incrementing sequence as a default on the column.
     AddSequence,
+    AddComment,
 }
 
 fn render_default<'a>(default: &'a DefaultValue, full_data_type: &str) -> Cow<'a, str> {

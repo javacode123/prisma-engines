@@ -85,6 +85,9 @@ impl<'a> AlterTableConstructor<'a> {
                 }) => {
                     self.alter_column(*column_id, changes);
                 }
+                TableChange::AlterComment { .. } => {
+                    // TODOzjl
+                }
             };
         }
 

@@ -331,6 +331,16 @@ impl SqlMigration {
                                 out.push_str(")\n");
                                 out.push_str(")\n");
                             }
+                            TableChange::AlterComment => {
+                                out.push_str(
+                                    format!(
+                                        "  [*] Renamed the table comment from {:?} to {:?}",
+                                        tables.previous.description(),
+                                        tables.next.description(),
+                                    )
+                                    .as_str(),
+                                );
+                            }
                         }
                     }
                 }
@@ -434,6 +444,11 @@ fn render_column_changes(columns: MigrationPair<TableColumnWalker<'_>>, changes:
                     "column became autoincrementing".to_owned()
                 }
             }
+            ColumnChange::CommentChanged => format!(
+                "changed comment from {:?} to {:?}",
+                columns.previous.description(),
+                columns.next.description()
+            ),
         })
         .join(", ");
 
@@ -580,6 +595,7 @@ pub(crate) enum TableChange {
     DropPrimaryKey,
     AddPrimaryKey,
     RenamePrimaryKey,
+    AlterComment,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]

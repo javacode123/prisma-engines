@@ -316,6 +316,9 @@ impl SqlRenderer for PostgresFlavour {
                     comment_lines
                         .push(self.render_column_comment(columns.next.table().name().to_string(), columns.next))
                 }
+                TableChange::AlterComment { .. } => {
+                    //TODO zjl
+                }
             };
         }
 
@@ -822,6 +825,9 @@ fn expand_alter_column(
                     // The sequence should be created.
                     changes.push(PostgresAlterColumn::AddSequence)
                 }
+            }
+            ColumnChange::CommentChanged => {
+                println!("需要实现注释变化")
             }
         }
     }

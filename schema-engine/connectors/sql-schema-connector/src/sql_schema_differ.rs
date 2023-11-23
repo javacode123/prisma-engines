@@ -130,6 +130,13 @@ fn push_altered_table_steps(steps: &mut Vec<SqlMigrationStep>, db: &DifferDataba
             steps.push(step);
         }
 
+        if table.previous().description() != table.next().description() {
+            steps.push(SqlMigrationStep::AlterTable(AlterTable {
+                table_ids: table.tables.map(|t| t.id),
+                changes: vec![TableChange::AlterComment],
+            }))
+        }
+
         // Order matters.
         let mut changes = Vec::new();
         if let Some(change) = dropped_primary_key(&table) {
@@ -194,7 +201,6 @@ fn alter_columns(table_differ: &TableDiffer<'_, '_>) -> Vec<TableChange> {
             }
 
             let column_id = MigrationPair::new(column_differ.previous.id, column_differ.next.id);
-
             match changes.type_change {
                 Some(ColumnTypeChange::NotCastable) => Some(TableChange::DropAndRecreateColumn { column_id, changes }),
                 Some(ColumnTypeChange::RiskyCast) => Some(TableChange::AlterColumn(AlterColumn {

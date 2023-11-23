@@ -140,7 +140,6 @@ impl<'a> DifferDatabase<'a> {
                 // next table: diff the column.
                 for (column_name, column_ids) in &columns_cache {
                     db.columns.insert((table_pair, column_name), *column_ids);
-
                     if let Some(column_ids) = column_ids.transpose() {
                         let column_walkers = schemas.walk(column_ids);
                         let changes = column::all_changes(column_walkers, flavour);

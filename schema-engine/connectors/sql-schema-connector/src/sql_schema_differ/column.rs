@@ -3,6 +3,7 @@ use enumflags2::BitFlags;
 
 use sql_schema_describer::{walkers::TableColumnWalker, DefaultKind, PrismaValue};
 
+// 比较 old 和 new 的行变化
 pub(crate) fn all_changes(cols: MigrationPair<TableColumnWalker<'_>>, flavour: &dyn SqlFlavour) -> ColumnChanges {
     let mut changes = BitFlags::empty();
     let type_change = flavour.column_type_change(cols);
@@ -23,6 +24,9 @@ pub(crate) fn all_changes(cols: MigrationPair<TableColumnWalker<'_>>, flavour: &
         changes |= ColumnChange::Autoincrement;
     }
 
+    if cols.previous.description() != cols.next.description() {
+        changes |= ColumnChange::CommentChanged
+    }
     ColumnChanges { type_change, changes }
 }
 
@@ -152,6 +156,7 @@ pub(crate) enum ColumnChange {
     Default,
     TypeChanged,
     Autoincrement,
+    CommentChanged,
 }
 
 // This should be pub(crate), but SqlMigration is exported, so it has to be

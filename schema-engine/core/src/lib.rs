@@ -206,25 +206,205 @@ fn parse_configuration(datamodel: &str) -> CoreResult<(Datasource, String, BitFl
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{commands, json_rpc::types::*, CoreResult};
+    use crate::json_rpc::types::*;
     use tracing_subscriber;
-
+    #[derive(Debug)]
+    struct DBConf {
+        provider: String,
+        url: String,
+    }
+    impl DBConf {
+        fn to_string(&self) -> String {
+            format!(
+                "datasource db {{\n  provider = \"{}\"\n  url      = \"{}\"\n}}\n",
+                self.provider, self.url
+            )
+        }
+    }
     struct Case {
         name: String,
-        push: String,
-        introspect: String,
+        schema: String,
+        steps: u32,
+    }
+
+    const NEW_TABLE: &str = r##"
+/// table comment
+model User {
+  /// id comment
+  id      Int     @id @default(autoincrement())
+  /// email comment
+  email   Int     @unique
+  /// name comment
+  name    String?
+  /// zjl
+  comment String
+  /// comment dd
+  dd      String
+}
+            "##;
+    const UPDATE_TABLE_COMMENT: &str = r##"
+/// comment
+model User {
+  /// id comment
+  id      Int     @id @default(autoincrement())
+  /// email comment
+  email   Int     @unique
+  /// name comment
+  name    String?
+  /// zjl
+  comment String
+  /// comment dd
+  dd      String
+}
+            "##;
+    const UPDATE_TABLE_COMMENT_AND_COL: &str = r##"
+/// use comment
+model User {
+  /// id comment
+  id      Int     @id 
+  /// email comment
+  email   Int     @unique
+  /// name commen
+  name    String?
+  /// comment
+  comment String
+}
+            "##;
+    const UPDATE_COMMENT: &str = r##"
+/// use comment
+model User {
+  /// id comment
+  id      Int     @id 
+  /// email comment
+  email   Int     @unique
+  /// name comment
+  name    String?
+  /// comment
+  comment String
+}
+            "##;
+    const UPDATE_COL: &str = r##"
+/// table comment
+model User {
+  /// id 
+  id      Int     @id @default(autoincrement())
+  /// email 
+  email   Int     
+  /// name 
+  name    String
+  /// comment
+  comment Int
+  /// comment dd
+  dd      Int
+}
+            "##;
+    const DEL_COL: &str = r##"
+/// table comment
+model User {
+  /// id 
+  id      Int     @id @default(autoincrement())
+  /// email 
+  email   Int
+  /// comment
+  comment Int
+  /// comment ee
+  ee String
+}
+            "##;
+    #[tokio::test]
+    async fn test_all() {
+        println!("先删除数据库的表");
+        // tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).init();
+        let ds = vec![DBConf {
+            provider: "mysql".to_string(),
+            url: "mysql://root:123456,zjl@localhost:3306/zjl".to_string(),
+        }];
+        let cases = vec![
+            Case {
+                name: "new table".to_string(),
+                schema: NEW_TABLE.to_string(),
+                steps: 1,
+            },
+            Case {
+                name: "update table comment".to_string(),
+                schema: UPDATE_TABLE_COMMENT.to_string(),
+                steps: 1,
+            },
+            Case {
+                name: "update table comment and col".to_string(),
+                schema: UPDATE_TABLE_COMMENT_AND_COL.to_string(),
+                steps: 2,
+            },
+            Case {
+                name: "update comment and add comment".to_string(),
+                schema: UPDATE_COMMENT.to_string(),
+                steps: 1,
+            },
+            Case {
+                name: "update col type and add comment".to_string(),
+                schema: UPDATE_COL.to_string(),
+                steps: 3,
+            },
+            Case {
+                name: "del col and add clo".to_string(),
+                schema: DEL_COL.to_string(),
+                steps: 1,
+            },
+        ];
+
+        for v in ds {
+            for c in &cases {
+                let source = &v.to_string();
+                let push_schema = source.to_string() + &*c.schema;
+                println!("--------test: {}----------- \npush:\n{} ", c.name, push_schema);
+                let res = test_push(&push_schema).await;
+                println!("\nout_put:\n{:?}\n", res);
+                assert_eq!(res.executed_steps, c.steps);
+
+                let intro_res = test_introspect(source).await;
+                println!(
+                    "introspect_res:\n{}\nwarnings:\n{:?}",
+                    intro_res.datamodel, intro_res.warnings
+                );
+                assert_eq!(
+                    remove_newlines_and_spaces(intro_res.datamodel.as_str()),
+                    remove_newlines_and_spaces(push_schema.as_str())
+                )
+            }
+        }
     }
 
     #[tokio::test]
-    async fn introspect() {
+    async fn test_s() {
         tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).init();
-        let schema = String::from(
-            r##"
-datasource db {
-  provider = "sqlserver"
-    url      = ""
-  }"##,
-        );
+        let source = r##"
+        datasource db {
+          provider = "mysql"
+          url      = "mysql://root:123456,zjl@localhost:3306/zjl"
+        }
+        
+        model User {
+          /// id
+          id      Int    @id @default(autoincrement())
+          /// email
+          email   Int
+          /// comment
+          comment Int
+          /// comment ee
+          ee      String
+        }
+        "##;
+        let res = test_push(&source).await;
+        println!("\nout_put:\n{:?}\n", res);
+
+        // let intro_res = test_introspect(source).await;
+        // println!(
+        //     "introspect_res:\n{}\nwarnings:\n{:?}",
+        //     intro_res.datamodel, intro_res.warnings
+        // );
+    }
+
+    async fn test_introspect(schema: &String) -> IntrospectResult {
         let api = match schema_api(Some(schema.clone()), None) {
             Ok(api) => api,
             Err(e) => {
@@ -233,7 +413,7 @@ datasource db {
         };
 
         let params = IntrospectParams {
-            schema,
+            schema: schema.to_string(),
             force: false,
             composite_type_depth: 0,
             schemas: None,
@@ -245,65 +425,21 @@ datasource db {
                 panic!("schema_api meet err {:?}", e)
             }
         };
-
-        println!(
-            "{}, {:?}, {:?}",
-            &introspected.datamodel, introspected.warnings, introspected.views
-        );
+        introspected
     }
 
-    #[tokio::test]
-    async fn test_push() {
-        let s = String::from(
-            r##"
-            datasource db {
-  provider = "sqlserver"
-    url      = "xxx"
-}
-model Post {
-  /// Employee ID
-  id       Int     @id @default(autoincrement())
-  /// Your comment here
-  title    String
-  authorID Int
-  /// content
-  c        String?
-  /// ccc
-  ccc        String?
-  User     User    @relation(fields: [authorID], references: [id])
-}
-
-model User {
-  id      Int     @id @default(autoincrement())
-  email   Int     @unique
-  name    String?
-  comment String?
-  c       String?
-  Post    Post[]
-}
-
-/// comment 
-model F {
-/// comment email
-email   Int     @unique
-}
-
-model E {
-email   Int     @unique
-}
-        "##,
-        );
-        tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).init();
-        let schema = String::from(s);
-        let api = match schema_api(Some(schema.clone()), None) {
+    async fn test_push(schema: &str) -> SchemaPushOutput {
+        let api = match schema_api(Some(schema.to_string()), None) {
             Ok(api) => api,
             Err(e) => {
                 panic!("schema_api meet err {}", e)
             }
         };
 
-        let params = SchemaPushInput { schema, force: false };
-
+        let params = SchemaPushInput {
+            schema: schema.to_string(),
+            force: true,
+        };
         let res = match api.schema_push(params).await.map_err(|err| println!("{}", err)) {
             Ok(introspected) => introspected,
             Err(e) => {
@@ -311,7 +447,16 @@ email   Int     @unique
             }
         };
 
-        println!("{:?}", res);
+        res
+    }
+
+    fn remove_newlines_and_spaces(s: &str) -> String {
+        let processed: String = s.split_whitespace().collect::<Vec<&str>>().join(" ");
+
+        let lines: Vec<&str> = processed.split('\n').collect();
+        let processed_lines: String = lines.join("\n");
+        println!("{}", processed_lines);
+        processed_lines
     }
 
     #[tokio::test]

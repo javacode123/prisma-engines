@@ -176,6 +176,14 @@ impl SqlRenderer for MysqlFlavour {
                     lines.push(format!("DROP COLUMN `{}`", columns.previous.name()));
                     lines.push(format!("ADD COLUMN {}", self.render_column(columns.next)));
                 }
+                TableChange::AlterComment => lines.push(format!(
+                    "COMMENT '{comment}'",
+                    comment = if let Some(comment) = tables.next.description() {
+                        comment.trim()
+                    } else {
+                        ""
+                    }
+                )),
             };
         }
 
@@ -374,8 +382,8 @@ fn render_mysql_modify(
         .map(|expression| format!(" DEFAULT {expression}"))
         .unwrap_or_default();
 
-    format!(
-        "MODIFY {column_name} {column_type}{nullability}{default}{sequence}",
+    let sql = format!(
+        "MODIFY {column_name} {column_type}{nullability}{default}{sequence} {comment}",
         column_name = Quoted::mysql_ident(&next_column.name()),
         column_type = column_type,
         nullability = if next_column.arity().is_required() {
@@ -389,7 +397,15 @@ fn render_mysql_modify(
         } else {
             ""
         },
-    )
+        comment = format!(
+            "COMMENT '{comment}'",
+            comment = match next_column.description() {
+                Some(comment) => comment.trim(),
+                None => "",
+            }
+        ),
+    );
+    sql
 }
 
 fn render_column_type(column: TableColumnWalker<'_>) -> Cow<'static, str> {

@@ -308,7 +308,7 @@ model User {
   /// comment
   comment Int
   /// comment ee
-  ee String
+  ee String?
 }
             "##;
     #[tokio::test]
@@ -318,15 +318,15 @@ model User {
         let ds = vec![
             DBConf {
                 provider: "mysql".to_string(),
-                url: "mysql://root:123456,zjl@localhost:3306/zjl".to_string(),
+                url: "mysql://root:*@localhost:3306/zjl".to_string(),
             },
             DBConf {
                 provider: "postgres".to_string(),
-                url: "postgres://postgres:123456,zjl@localhost:5432/zjl".to_string(),
+                url: "postgres://postgres:*@localhost:5432/zjl".to_string(),
             },
             DBConf {
                 provider:"sqlserver".to_string(),
-                url:"sqlserver://localhost:1433;database=zjl;user=SA;password=123456,zjl;trustServerCertificate=true;socket_timeout=60;isolationLevel=READ UNCOMMITTED".to_string(),
+                url:"sqlserver://localhost:1433;database=zjl;user=SA;password=*;trustServerCertificate=true;socket_timeout=60;isolationLevel=READ UNCOMMITTED".to_string(),
             }
         ];
         let cases = vec![
@@ -382,28 +382,33 @@ model User {
         tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).init();
         let source = r##"
         datasource db {
-          provider = "sqlserver"
-          url      = "sqlserver://localhost:1433;database=zjl;user=SA;password=123456,zjl;trustServerCertificate=true;socket_timeout=60;isolationLevel=READ UNCOMMITTED"
+          provider = "mongodb"
+          url      = "mongodb://root:*@localhost:27017/zjl?ssl=false&connectTimeoutMS=5000&maxPoolSize=50&authSource=admin"
         }
-        /// use comment
-        model User {
-          /// id comment
-          id      Int     @id 
-          /// email comment
-          email   Int     @unique
-          /// name commen
-          name    String?
-          /// comment
-          comment String
-        }
+        /// comment
+       model User {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  k  String
+}
+
+model zjl {
+/// comment
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  k  String
+}
         "##;
         let res = test_push(&source).await;
         println!("\nout_put:\n{:?}\n", res);
 
-        let intro_res = test_introspect(&r##"datasource db {
-              provider = "sqlserver"
-              url      = "sqlserver://localhost:1433;database=zjl;user=SA;password=123456,zjl;trustServerCertificate=true;socket_timeout=60;isolationLevel=READ UNCOMMITTED"
-        }"##.to_string()).await;
+        let intro_res = test_introspect(
+            &r##"datasource db {
+              provider = "mongodb"
+          url      = "mongodb://root:*@localhost:27017/zjl?ssl=false&connectTimeoutMS=5000&maxPoolSize=50&authSource=admin"
+        
+               }"##
+            .to_string(),
+        )
+        .await;
         println!(
             "introspect_res:\n{}\nwarnings:\n{:?}",
             intro_res.datamodel, intro_res.warnings

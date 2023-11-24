@@ -89,7 +89,9 @@ impl SqlRenderer for SqliteFlavour {
                 TableChange::DropColumn { .. } => unreachable!("DropColumn on SQLite"),
                 TableChange::DropPrimaryKey { .. } => unreachable!("DropPrimaryKey on SQLite"),
                 TableChange::RenamePrimaryKey { .. } => unreachable!("AddPrimaryKey on SQLite"),
-                TableChange::AlterComment { .. } => unreachable!("AddPrimaryKey on SQLite"),
+                TableChange::AlterComment { .. } => {
+                    tracing::debug!("sqlite not support add table comment");
+                }
             };
         }
 

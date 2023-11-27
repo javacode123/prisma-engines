@@ -50,10 +50,7 @@ pub fn parse_schema(datamodel_string: &str, diagnostics: &mut Diagnostics) -> Sc
                     }
                     Rule::comment_block => {
                         match pairs.peek().map(|b| b.as_rule()) {
-                            Some(Rule::empty_lines) => {
-                                // free floating
-                            }
-                            Some(Rule::model_declaration) | Some(Rule::enum_declaration) | Some(Rule::config_block) => {
+                            Some(Rule::empty_lines | Rule::model_declaration) | Some(Rule::enum_declaration) | Some(Rule::config_block) => {
                                 pending_block_comment = Some(current);
                             }
                             _ => (),

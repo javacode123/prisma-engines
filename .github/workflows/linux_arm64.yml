@@ -1,51 +1,51 @@
-name: linux_arm64
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    paths-ignore:
-      - '.github/**'
-      - '!.github/workflows/benchmark.yml'
-      - '.buildkite/**'
-      - '*.md'
-      - 'LICENSE'
-      - 'CODEOWNERS'
-      - 'renovate.json'
-
-env:
-  CARGO_TERM_COLOR: always
-
-jobs:
-  build:
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          ref: 'main'
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: aarch64-unknown-linux-gnu
-          override: true
-      - name: Build
-        run: | 
-          curl -O https://www.openssl.org/source/openssl-1.1.0f.tar.gz
-          tar xf openssl-1.1.0f.tar.gz
-          cd openssl-1.1.0f
-          export CC=...
-          ./Configure --prefix=... linux-x86_64 -fPIC
-          make -j$(nproc)
-          make install
-          cargo build --verbose --release -p schema-engine-cli --target aarch64-unknown-linux-gnu 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: binaries
-          path: |
-            ${{ github.workspace }}/target/aarch64-unknown-linux-gnu/release/schema*
+#name: linux_arm64
+#on:
+#  push:
+#    branches:
+#      - main
+#  pull_request:
+#    paths-ignore:
+#      - '.github/**'
+#      - '!.github/workflows/benchmark.yml'
+#      - '.buildkite/**'
+#      - '*.md'
+#      - 'LICENSE'
+#      - 'CODEOWNERS'
+#      - 'renovate.json'
+#
+#env:
+#  CARGO_TERM_COLOR: always
+#
+#jobs:
+#  build:
+#
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v2
+#        with:
+#          ref: 'main'
+#      - name: Setup Rust
+#        uses: actions-rs/toolchain@v1
+#        with:
+#          profile: minimal
+#          toolchain: stable
+#          target: aarch64-unknown-linux-gnu
+#          override: true
+#      - name: Build
+#        run: |
+#          curl -O https://www.openssl.org/source/openssl-1.1.0f.tar.gz
+#          tar xf openssl-1.1.0f.tar.gz
+#          cd openssl-1.1.0f
+#          export CC=...
+#          ./Configure --prefix=... linux-x86_64 -fPIC
+#          make -j$(nproc)
+#          make install
+#          cargo build --verbose --release -p schema-engine-cli --target aarch64-unknown-linux-gnu
+#      - name: Upload artifacts
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: binaries
+#          path: |
+#            ${{ github.workspace }}/target/aarch64-unknown-linux-gnu/release/schema*

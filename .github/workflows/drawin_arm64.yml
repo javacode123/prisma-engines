@@ -35,11 +35,12 @@ jobs:
       
       - name: Build
         run: |
-          cargo build --verbose --release -p schema-engine-cli --target aarch64-apple-darwin
+          cargo build --release
+          gizp ${{ github.workspace }}/target/release/schema-engine
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: binaries
           path: |
-            ${{ github.workspace }}/target/aarch64-apple-darwin/release/schema*
+            ${{ github.workspace }}/target/release/schema-engine.gz

@@ -36,9 +36,13 @@ jobs:
       - name: Build
         run: cargo build --verbose --release -p schema-engine-cli --target x86_64-pc-windows-msvc
 
+      - name: Compress EXE
+        run: |
+          Compress-Archive -Path ${{ github.workspace }}/target/x86_64-pc-windows-msvc/release/schema-engine.exe -DestinationPath ${{ github.workspace }}/target/x86_64-pc-windows-msvc/release/schema-engine.exe.gz     
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: binaries
-          path: 
-            ${{ github.workspace }}/target/x86_64-pc-windows-msvc/release/schema*
+          path:
+            ${{ github.workspace }}/target/x86_64-pc-windows-msvc/release/schema-engine.exe.gz

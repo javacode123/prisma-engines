@@ -7,7 +7,6 @@ impl Model {
     pub fn name(&self) -> &str {
         self.walker().name()
     }
-
     /// Returns the set of fields to be used as the primary identifier for a record of that model.
     /// The identifier is nothing but an internal convention to have an anchor point for querying, or in other words,
     /// the identifier is not to be mistaken for a stable, external identifier, but has to be understood as

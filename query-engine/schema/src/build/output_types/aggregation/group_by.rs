@@ -30,6 +30,7 @@ pub(crate) fn group_by_output_object_type(ctx: &'_ QuerySchema, model: Model) ->
                             "_all",
                             OutputType::non_list(OutputType::int()),
                             None,
+                            None,
                         ));
                         fields
                     })));
@@ -107,6 +108,7 @@ fn scalar_output_fields<'a>(ctx: &'a QuerySchema, model: &Model) -> Vec<OutputFi
                 f.borrowed_name(&ctx.internal_data_model.schema),
                 field::map_scalar_output_type_for_field(ctx, f.clone()),
                 None,
+                f.borrow_comment(&ctx.internal_data_model.schema),
             )
             .nullable_if(!f.is_required())
         })

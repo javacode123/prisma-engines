@@ -27,6 +27,7 @@ pub(crate) fn field_no_arguments<'a, T>(
     name: T,
     field_type: OutputType<'a>,
     query_info: Option<QueryInfo>,
+    comment: Option<&'a str>,
 ) -> OutputField<'a>
 where
     T: Into<Cow<'a, str>>,
@@ -37,6 +38,7 @@ where
         arguments: None,
         is_nullable: false,
         query_info,
+        comment,
     }
 }
 
@@ -46,6 +48,7 @@ pub(crate) fn field<'a, T, F: FnOnce() -> Vec<InputField<'a>> + Send + Sync + 'a
     arguments: F,
     field_type: OutputType<'a>,
     query_info: Option<QueryInfo>,
+    comment: Option<&'a str>,
 ) -> OutputField<'a>
 where
     T: Into<Cow<'a, str>>,
@@ -58,6 +61,7 @@ where
         field_type,
         query_info,
         is_nullable: false,
+        comment,
     }
 }
 
@@ -66,17 +70,19 @@ pub(crate) fn simple_input_field<'a>(
     name: impl Into<std::borrow::Cow<'a, str>>,
     field_type: InputType<'a>,
     default_value: Option<DefaultKind>,
-) -> InputField<'_> {
-    input_field(name, vec![field_type], default_value)
+    comment: Option<&'a str>,
+) -> InputField<'a> {
+    input_field(name, vec![field_type], default_value, comment)
 }
 
 /// Field convenience wrapper function.
 pub(crate) fn input_field<'a>(
-    name: impl Into<std::borrow::Cow<'a, str>>,
+    name: impl Into<Cow<'a, str>>,
     field_types: Vec<InputType<'a>>,
     default_value: Option<DefaultKind>,
+    comment: Option<&'a str>,
 ) -> InputField<'a> {
-    InputField::new(name.into(), field_types, default_value, true)
+    InputField::new(name.into(), field_types, default_value, true, comment)
 }
 
 /// Appends an option of type T to a vector over T if the option is Some.

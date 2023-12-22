@@ -17,6 +17,10 @@ impl RelationField {
         self.walker().name()
     }
 
+    pub fn borrowed_comment<'a>(&self, schema: &'a psl::ValidatedSchema) -> Option<&'a str> {
+        schema.db.walk(self.id).ast_field().comment()
+    }
+
     pub fn arity(&self) -> FieldArity {
         self.walker().ast_field().arity
     }

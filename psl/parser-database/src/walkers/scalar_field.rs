@@ -47,6 +47,11 @@ impl<'db> ScalarFieldWalker<'db> {
         self.ast_field().name()
     }
 
+    /// The comment of the field
+    pub fn comment(self) -> Option<&'db str> {
+        self.ast_field().comment()
+    }
+
     /// The `@default()` AST attribute on the field, if any.
     pub fn default_attribute(self) -> Option<&'db ast::Attribute> {
         self.attributes()

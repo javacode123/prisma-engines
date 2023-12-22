@@ -116,6 +116,7 @@ pub struct InputField<'a> {
 
     field_types: Vec<InputType<'a>>,
     is_required: bool,
+    comment: Option<&'a str>,
 }
 
 impl<'a> InputField<'a> {
@@ -124,12 +125,14 @@ impl<'a> InputField<'a> {
         field_types: Vec<InputType<'a>>,
         default_value: Option<DefaultKind>,
         is_required: bool,
+        comment: Option<&'a str>,
     ) -> InputField<'a> {
         InputField {
             name,
             default_value,
             field_types,
             is_required,
+            comment,
         }
     }
 
@@ -183,6 +186,10 @@ impl<'a> InputField<'a> {
         } else {
             self
         }
+    }
+
+    pub fn comment(&self) -> Option<&'a str> {
+        self.comment
     }
 }
 

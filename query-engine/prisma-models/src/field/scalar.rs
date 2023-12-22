@@ -76,6 +76,20 @@ impl ScalarField {
         }
     }
 
+    pub fn borrow_comment<'a>(&self, schema: &'a psl::ValidatedSchema) -> Option<&'a str> {
+        match self.id {
+            ScalarFieldId::InModel(id) => schema.db.walk(id).comment(),
+            ScalarFieldId::InCompositeType(id) => schema.db.walk(id).comment(),
+        }
+    }
+
+    pub fn comment(&self) -> Option<&str> {
+        match self.id {
+            ScalarFieldId::InModel(id) => self.dm.walk(id).comment(),
+            ScalarFieldId::InCompositeType(id) => self.dm.walk(id).comment(),
+        }
+    }
+
     pub fn name(&self) -> &str {
         match self.id {
             ScalarFieldId::InModel(id) => self.dm.walk(id).name(),

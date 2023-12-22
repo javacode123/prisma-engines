@@ -5,11 +5,13 @@ use prisma_models::{CompositeFieldRef, ScalarFieldRef};
 pub(crate) fn map_output_field(ctx: &'_ QuerySchema, model_field: ModelField) -> OutputField<'_> {
     let cloned_model_field = model_field.clone();
     let model_field_is_required = model_field.is_required();
+    let comment = cloned_model_field.borrowed_comment(&ctx.internal_data_model.schema);
     field(
         cloned_model_field.borrowed_name(&ctx.internal_data_model.schema),
         move || arguments::many_records_output_field_arguments(ctx, model_field),
         map_field_output_type(ctx, cloned_model_field),
         None,
+        comment,
     )
     .nullable_if(!model_field_is_required)
 }
@@ -95,7 +97,7 @@ where
             object_mapper,
         ));
 
-        Some(field_no_arguments(name, object_type, None))
+        Some(field_no_arguments(name, object_type, None, None))
     }
 }
 
@@ -127,6 +129,7 @@ where
                     },
                     type_mapper(ctx, &cloned_rf),
                     None,
+                    cloned_rf.borrowed_comment(&ctx.internal_data_model.schema),
                 )
             })
             .collect()

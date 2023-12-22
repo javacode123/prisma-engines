@@ -49,11 +49,12 @@ fn create_execute_raw_field<'a>() -> OutputField<'a> {
         "executeRaw",
         || {
             vec![
-                input_field("query", vec![InputType::string()], None),
+                input_field("query", vec![InputType::string()], None, None),
                 input_field(
                     "parameters",
                     vec![InputType::json_list()],
                     Some(DefaultKind::Single(PrismaValue::String("[]".into()))),
+                    None,
                 )
                 .optional(),
             ]
@@ -63,6 +64,7 @@ fn create_execute_raw_field<'a>() -> OutputField<'a> {
             tag: QueryTag::ExecuteRaw,
             model: None,
         }),
+        None,
     )
 }
 
@@ -71,11 +73,12 @@ fn create_query_raw_field<'a>() -> OutputField<'a> {
         "queryRaw",
         || {
             vec![
-                simple_input_field("query", InputType::string(), None),
+                simple_input_field("query", InputType::string(), None, None),
                 simple_input_field(
                     "parameters",
                     InputType::json_list(),
                     Some(DefaultKind::Single(PrismaValue::String("[]".into()))),
+                    None,
                 )
                 .optional(),
             ]
@@ -85,18 +88,20 @@ fn create_query_raw_field<'a>() -> OutputField<'a> {
             tag: QueryTag::QueryRaw,
             model: None,
         }),
+        None,
     )
 }
 
 fn create_mongodb_run_command_raw<'a>() -> OutputField<'a> {
     field(
         "runCommandRaw",
-        || vec![simple_input_field("command", InputType::json(), None)],
+        || vec![simple_input_field("command", InputType::json(), None, None)],
         OutputType::non_list(OutputType::json()),
         Some(QueryInfo {
             tag: QueryTag::RunCommandRaw,
             model: None,
         }),
+        None,
     )
 }
 
@@ -112,6 +117,7 @@ fn delete_item_field(ctx: &QuerySchema, model: Model) -> OutputField<'_> {
             model: Some(model_id),
             tag: QueryTag::DeleteOne,
         }),
+        None,
     )
     .nullable()
 }
@@ -129,6 +135,7 @@ fn delete_many_field(ctx: &QuerySchema, model: Model) -> OutputField<'_> {
             model: Some(model.id),
             tag: QueryTag::DeleteMany,
         }),
+        None,
     )
 }
 
@@ -145,6 +152,7 @@ fn update_item_field(ctx: &QuerySchema, model: Model) -> OutputField<'_> {
             model: Some(model_id),
             tag: QueryTag::UpdateOne,
         }),
+        None,
     )
     .nullable()
 }
@@ -162,6 +170,7 @@ fn update_many_field(ctx: &QuerySchema, model: Model) -> OutputField<'_> {
             model: Some(model.id),
             tag: QueryTag::UpdateMany,
         }),
+        None,
     )
 }
 
@@ -177,5 +186,6 @@ fn upsert_item_field(ctx: &QuerySchema, model: Model) -> OutputField<'_> {
             model: Some(model_id),
             tag: QueryTag::UpsertOne,
         }),
+        None,
     )
 }

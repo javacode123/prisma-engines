@@ -20,7 +20,17 @@ impl<'a> GqlFieldRenderer<'a> {
         let rendered_type = pick_input_type(input_field.field_types()).as_renderer().render(ctx);
         let required = if input_field.is_required() { "!" } else { "" };
 
-        format!("{}: {}{}", input_field.name, rendered_type, required)
+        if let Some(c) = input_field.comment() {
+            format!(
+                "{}  {}: {}{}",
+                format!("\"\"\"{}\"\"\"\n", c.to_string()),
+                input_field.name,
+                rendered_type,
+                required
+            )
+        } else {
+            format!("{}: {}{}", input_field.name, rendered_type, required)
+        }
     }
 
     fn render_output_field(&self, field: &OutputField<'a>, ctx: &mut RenderContext) -> String {
@@ -45,7 +55,19 @@ impl<'a> GqlFieldRenderer<'a> {
 
         let rendered_type = field.field_type().as_renderer().render(ctx);
         let bang = if !field.is_nullable { "!" } else { "" };
-        format!("{}{}: {}{}", field.name(), rendered_args, rendered_type, bang)
+
+        if let Some(c) = field.comment() {
+            format!(
+                "{}  {}{}: {}{}",
+                format!("\"\"\"{}\"\"\"\n", c.to_string()),
+                field.name(),
+                rendered_args,
+                rendered_type,
+                bang
+            )
+        } else {
+            format!("{}{}: {}{}", field.name(), rendered_args, rendered_type, bang)
+        }
     }
 
     fn render_arguments<'b>(
@@ -66,7 +88,11 @@ impl<'a> GqlFieldRenderer<'a> {
         let rendered_type = pick_input_type(arg.field_types()).as_renderer().render(ctx);
         let required = if arg.is_required() { "!" } else { "" };
 
-        format!("{}: {}{}", arg.name, rendered_type, required)
+        if let Some(comment) = arg.comment() {
+            format!("\"\"\"{}\"\"\"\n{}: {}{}", comment, arg.name, rendered_type, required)
+        } else {
+            format!("{}: {}{}", arg.name, rendered_type, required)
+        }
     }
 }
 

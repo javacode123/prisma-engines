@@ -122,4 +122,11 @@ impl FieldRefEnumType {
     pub fn values(&self) -> Vec<String> {
         self.values.iter().map(|(name, _)| name.to_owned()).collect()
     }
+
+    pub fn values_with_comment(&self) -> Vec<(String, Option<&str>)> {
+        self.values
+            .iter()
+            .map(|(name, f)| (name.to_owned(), f.comment()))
+            .collect()
+    }
 }

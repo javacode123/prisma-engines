@@ -29,9 +29,9 @@ fn nested_upsert_list_input_object(
     let mut input_object = init_input_object_type(ident);
     input_object.set_fields(move || {
         vec![
-            input_field(args::WHERE, vec![InputType::object(where_object.clone())], None),
-            input_field(args::UPDATE, update_types.clone(), None),
-            input_field(args::CREATE, create_types.clone(), None),
+            input_field(args::WHERE, vec![InputType::object(where_object.clone())], None, None),
+            input_field(args::UPDATE, update_types.clone(), None, None),
+            input_field(args::CREATE, create_types.clone(), None, None),
         ]
     });
 
@@ -53,8 +53,8 @@ fn nested_upsert_nonlist_input_object(
             update_one_objects::update_one_input_types(ctx, related_model.clone(), Some(parent_field.clone()));
 
         let fields = vec![
-            input_field(args::UPDATE, update_types, None),
-            input_field(args::CREATE, create_types.clone(), None),
+            input_field(args::UPDATE, update_types, None, None),
+            input_field(args::CREATE, create_types.clone(), None, None),
             where_argument(ctx, &related_model),
         ];
 

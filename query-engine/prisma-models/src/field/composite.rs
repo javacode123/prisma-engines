@@ -22,6 +22,13 @@ impl CompositeField {
         }
     }
 
+    pub fn borrowed_comment<'a>(&self, schema: &'a psl::ValidatedSchema) -> Option<&'a str> {
+        match self.id {
+            CompositeFieldId::InModel(sfid) => schema.db.walk(sfid).comment(),
+            CompositeFieldId::InCompositeType(id) => schema.db.walk(id).comment(),
+        }
+    }
+
     pub fn arity(&self) -> FieldArity {
         match self.id {
             CompositeFieldId::InModel(sfid) => self.dm.walk(sfid).ast_field().arity,

@@ -10,6 +10,7 @@ pub(crate) fn affected_records_object_type<'a>() -> ObjectType<'a> {
             AFFECTED_COUNT,
             OutputType::non_list(OutputType::int()),
             None,
+            None,
         )]
     })
 }

@@ -70,9 +70,15 @@ fn to_many_relation_filter_object(ctx: &'_ QuerySchema, rf: RelationFieldRef) ->
     object.set_fields(move || {
         let related_input_type = filter_objects::where_object_type(ctx, rf.related_model().into());
         vec![
-            simple_input_field(filters::EVERY, InputType::object(related_input_type.clone()), None).optional(),
-            simple_input_field(filters::SOME, InputType::object(related_input_type.clone()), None).optional(),
-            simple_input_field(filters::NONE, InputType::object(related_input_type), None).optional(),
+            simple_input_field(
+                filters::EVERY,
+                InputType::object(related_input_type.clone()),
+                None,
+                None,
+            )
+            .optional(),
+            simple_input_field(filters::SOME, InputType::object(related_input_type.clone()), None, None).optional(),
+            simple_input_field(filters::NONE, InputType::object(related_input_type), None, None).optional(),
         ]
     });
     object
@@ -87,10 +93,10 @@ fn to_one_relation_filter_object(ctx: &'_ QuerySchema, rf: RelationFieldRef) -> 
         let related_input_type = filter_objects::where_object_type(ctx, rf.related_model().into());
 
         vec![
-            simple_input_field(filters::IS, InputType::object(related_input_type.clone()), None)
+            simple_input_field(filters::IS, InputType::object(related_input_type.clone()), None, None)
                 .optional()
                 .nullable_if(!rf.is_required()),
-            simple_input_field(filters::IS_NOT, InputType::object(related_input_type), None)
+            simple_input_field(filters::IS_NOT, InputType::object(related_input_type), None, None)
                 .optional()
                 .nullable_if(!rf.is_required()),
         ]
@@ -116,13 +122,18 @@ fn to_one_composite_filter_object(ctx: &'_ QuerySchema, cf: CompositeFieldRef) -
         let composite_equals_object = filter_objects::composite_equality_object(ctx, cf.clone());
 
         let mut fields = vec![
-            simple_input_field(filters::EQUALS, InputType::object(composite_equals_object), None)
+            simple_input_field(filters::EQUALS, InputType::object(composite_equals_object), None, None)
                 .optional()
                 .nullable_if(!cf.is_required()),
-            simple_input_field(filters::IS, InputType::object(composite_where_object.clone()), None)
-                .optional()
-                .nullable_if(!cf.is_required()),
-            simple_input_field(filters::IS_NOT, InputType::object(composite_where_object), None)
+            simple_input_field(
+                filters::IS,
+                InputType::object(composite_where_object.clone()),
+                None,
+                None,
+            )
+            .optional()
+            .nullable_if(!cf.is_required()),
+            simple_input_field(filters::IS_NOT, InputType::object(composite_where_object), None, None)
                 .optional()
                 .nullable_if(!cf.is_required()),
         ];
@@ -151,12 +162,25 @@ fn to_many_composite_filter_object(ctx: &'_ QuerySchema, cf: CompositeFieldRef) 
                 filters::EQUALS,
                 InputType::list(InputType::object(composite_equals_object)),
                 None,
+                None,
             )
             .optional(),
-            simple_input_field(filters::EVERY, InputType::object(composite_where_object.clone()), None).optional(),
-            simple_input_field(filters::SOME, InputType::object(composite_where_object.clone()), None).optional(),
-            simple_input_field(filters::NONE, InputType::object(composite_where_object), None).optional(),
-            simple_input_field(filters::IS_EMPTY, InputType::boolean(), None).optional(),
+            simple_input_field(
+                filters::EVERY,
+                InputType::object(composite_where_object.clone()),
+                None,
+                None,
+            )
+            .optional(),
+            simple_input_field(
+                filters::SOME,
+                InputType::object(composite_where_object.clone()),
+                None,
+                None,
+            )
+            .optional(),
+            simple_input_field(filters::NONE, InputType::object(composite_where_object), None, None).optional(),
+            simple_input_field(filters::IS_EMPTY, InputType::boolean(), None, None).optional(),
         ];
 
         // TODO: Remove from required lists once we have optional lists
@@ -185,15 +209,23 @@ fn scalar_list_filter_type(ctx: &'_ QuerySchema, sf: ScalarFieldRef) -> InputObj
 
         let mapped_nonlist_type_with_field_ref_input = mapped_nonlist_type.with_field_ref_input();
         fields.push(
-            input_field(filters::HAS, mapped_nonlist_type_with_field_ref_input, None)
+            input_field(filters::HAS, mapped_nonlist_type_with_field_ref_input, None, None)
                 .optional()
                 .nullable_if(!sf.is_required()),
         );
 
         let mapped_list_type_with_field_ref_input = mapped_list_type.with_field_ref_input();
-        fields.push(input_field(filters::HAS_EVERY, mapped_list_type_with_field_ref_input.clone(), None).optional());
-        fields.push(input_field(filters::HAS_SOME, mapped_list_type_with_field_ref_input, None).optional());
-        fields.push(simple_input_field(filters::IS_EMPTY, InputType::boolean(), None).optional());
+        fields.push(
+            input_field(
+                filters::HAS_EVERY,
+                mapped_list_type_with_field_ref_input.clone(),
+                None,
+                None,
+            )
+            .optional(),
+        );
+        fields.push(input_field(filters::HAS_SOME, mapped_list_type_with_field_ref_input, None, None).optional());
+        fields.push(simple_input_field(filters::IS_EMPTY, InputType::boolean(), None, None).optional());
         fields
     });
     object
@@ -334,14 +366,14 @@ fn full_scalar_filter_type(
 }
 
 fn is_set_input_field<'a>() -> InputField<'a> {
-    simple_input_field(filters::IS_SET, InputType::boolean(), None).optional()
+    simple_input_field(filters::IS_SET, InputType::boolean(), None, None).optional()
 }
 
 fn equality_filters(mapped_type: InputType<'_>, nullable: bool) -> impl Iterator<Item = InputField<'_>> {
     let types = mapped_type.with_field_ref_input();
 
     std::iter::once(
-        input_field(filters::EQUALS, types, None)
+        input_field(filters::EQUALS, types, None, None)
             .optional()
             .nullable_if(nullable),
     )
@@ -357,10 +389,10 @@ fn json_equality_filters<'a>(
         let mut field_types = mapped_type.with_field_ref_input();
         field_types.push(InputType::Enum(enum_type));
 
-        input_field(filters::EQUALS, field_types, None).optional()
+        input_field(filters::EQUALS, field_types, None, None).optional()
     } else {
         let inner = mapped_type.with_field_ref_input();
-        input_field(filters::EQUALS, inner, None)
+        input_field(filters::EQUALS, inner, None, None)
             .optional()
             .nullable_if(nullable)
     };
@@ -382,10 +414,10 @@ fn inclusion_filters<'a>(
     };
 
     vec![
-        input_field(filters::IN, field_types.clone(), None)
+        input_field(filters::IN, field_types.clone(), None, None)
             .optional()
             .nullable_if(nullable),
-        input_field(filters::NOT_IN, field_types, None)
+        input_field(filters::NOT_IN, field_types, None, None)
             .optional()
             .nullable_if(nullable), // Kept for legacy reasons!
     ]
@@ -403,10 +435,10 @@ fn alphanumeric_filters<'a>(ctx: &'a QuerySchema, mapped_type: InputType<'a>) ->
         };
 
     vec![
-        input_field(filters::LOWER_THAN, field_types.clone(), None).optional(),
-        input_field(filters::LOWER_THAN_OR_EQUAL, field_types.clone(), None).optional(),
-        input_field(filters::GREATER_THAN, field_types.clone(), None).optional(),
-        input_field(filters::GREATER_THAN_OR_EQUAL, field_types, None).optional(),
+        input_field(filters::LOWER_THAN, field_types.clone(), None, None).optional(),
+        input_field(filters::LOWER_THAN_OR_EQUAL, field_types.clone(), None, None).optional(),
+        input_field(filters::GREATER_THAN, field_types.clone(), None, None).optional(),
+        input_field(filters::GREATER_THAN_OR_EQUAL, field_types, None, None).optional(),
     ]
     .into_iter()
 }
@@ -421,11 +453,11 @@ fn string_filters<'a>(
     let string_filters = ctx.connector.string_filters(input_object_type_name);
     let mut string_filters: Vec<_> = string_filters
         .iter()
-        .map(|filter| input_field(filter.name(), field_types.clone(), None).optional())
+        .map(|filter| input_field(filter.name(), field_types.clone(), None, None).optional())
         .collect();
 
     if ctx.can_full_text_search() {
-        string_filters.push(simple_input_field(filters::SEARCH, mapped_type, None).optional());
+        string_filters.push(simple_input_field(filters::SEARCH, mapped_type, None, None).optional());
     }
 
     string_filters.into_iter()
@@ -445,17 +477,34 @@ fn json_filters(ctx: &'_ QuerySchema) -> impl Iterator<Item = InputField<'_>> {
     let json_with_field_ref_input = InputType::json().with_field_ref_input();
 
     vec![
-        simple_input_field(filters::PATH, path_type, None).optional(),
-        input_field(filters::STRING_CONTAINS, string_with_field_ref_input.clone(), None).optional(),
-        input_field(filters::STRING_STARTS_WITH, string_with_field_ref_input.clone(), None).optional(),
-        input_field(filters::STRING_ENDS_WITH, string_with_field_ref_input, None).optional(),
-        input_field(filters::ARRAY_CONTAINS, json_with_field_ref_input.clone(), None)
+        simple_input_field(filters::PATH, path_type, None, None).optional(),
+        input_field(
+            filters::STRING_CONTAINS,
+            string_with_field_ref_input.clone(),
+            None,
+            None,
+        )
+        .optional(),
+        input_field(
+            filters::STRING_STARTS_WITH,
+            string_with_field_ref_input.clone(),
+            None,
+            None,
+        )
+        .optional(),
+        input_field(filters::STRING_ENDS_WITH, string_with_field_ref_input, None, None).optional(),
+        input_field(filters::ARRAY_CONTAINS, json_with_field_ref_input.clone(), None, None)
             .optional()
             .nullable(),
-        input_field(filters::ARRAY_STARTS_WITH, json_with_field_ref_input.clone(), None)
-            .optional()
-            .nullable(),
-        input_field(filters::ARRAY_ENDS_WITH, json_with_field_ref_input, None)
+        input_field(
+            filters::ARRAY_STARTS_WITH,
+            json_with_field_ref_input.clone(),
+            None,
+            None,
+        )
+        .optional()
+        .nullable(),
+        input_field(filters::ARRAY_ENDS_WITH, json_with_field_ref_input, None, None)
             .optional()
             .nullable(),
     ]
@@ -472,6 +521,7 @@ fn query_mode_field(ctx: &'_ QuerySchema, nested: bool) -> impl Iterator<Item = 
             filters::MODE,
             InputType::enum_type(enum_type),
             Some(DefaultKind::Single(PrismaValue::Enum(filters::DEFAULT.to_owned()))),
+            None,
         )
         .optional();
 
@@ -491,7 +541,7 @@ fn aggregate_filter_field(
     list: bool,
 ) -> InputField<'_> {
     let filters = full_scalar_filter_type(ctx, typ, None, list, nullable, true, false);
-    simple_input_field(aggregation.into(), InputType::object(filters), None).optional()
+    simple_input_field(aggregation.into(), InputType::object(filters), None, None).optional()
 }
 
 fn map_avg_type_ident(typ: TypeIdentifier) -> TypeIdentifier {
@@ -520,12 +570,12 @@ fn not_filter_field<'a>(
             let mut field_types = mapped_scalar_type.with_field_ref_input();
             field_types.push(InputType::Enum(enum_type));
 
-            input_field(filters::NOT_LOWERCASE, field_types, None).optional()
+            input_field(filters::NOT_LOWERCASE, field_types, None, None).optional()
         }
 
         TypeIdentifier::Json => {
             let ty = mapped_scalar_type.with_field_ref_input();
-            input_field(filters::NOT_LOWERCASE, ty, None)
+            input_field(filters::NOT_LOWERCASE, ty, None, None)
                 .optional()
                 .nullable_if(is_nullable)
         }
@@ -542,7 +592,7 @@ fn not_filter_field<'a>(
                 include_aggregates,
             ));
 
-            input_field(filters::NOT_LOWERCASE, vec![mapped_scalar_type, shorthand], None)
+            input_field(filters::NOT_LOWERCASE, vec![mapped_scalar_type, shorthand], None, None)
                 .optional()
                 .nullable_if(is_nullable)
         }

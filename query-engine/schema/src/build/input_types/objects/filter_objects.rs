@@ -19,12 +19,14 @@ pub(crate) fn scalar_filter_object_type(
                 filters::AND,
                 vec![object_type.clone(), InputType::list(object_type.clone())],
                 None,
+                None,
             )
             .optional(),
-            input_field(filters::OR, vec![InputType::list(object_type.clone())], None).optional(),
+            input_field(filters::OR, vec![InputType::list(object_type.clone())], None, None).optional(),
             input_field(
                 filters::NOT,
                 vec![object_type.clone(), InputType::list(object_type)],
+                None,
                 None,
             )
             .optional(),
@@ -54,12 +56,14 @@ pub(crate) fn where_object_type(ctx: &'_ QuerySchema, container: ParentContainer
                 filters::AND,
                 vec![object_type.clone(), InputType::list(object_type.clone())],
                 None,
+                None,
             )
             .optional(),
-            input_field(filters::OR, vec![InputType::list(object_type.clone())], None).optional(),
+            input_field(filters::OR, vec![InputType::list(object_type.clone())], None, None).optional(),
             input_field(
                 filters::NOT,
                 vec![object_type.clone(), InputType::list(object_type)],
+                None,
                 None,
             )
             .optional(),
@@ -145,15 +149,15 @@ pub(crate) fn where_unique_object_type(ctx: &'_ QuerySchema, model: Model) -> In
                 let sf = f.as_scalar().unwrap();
                 let name = sf.borrowed_name(&ctx.internal_data_model.schema);
                 let typ = map_scalar_input_type_for_field(ctx, sf);
-
-                simple_input_field(name, typ, None).optional()
+                let comment = f.borrowed_comment(&ctx.internal_data_model.schema);
+                simple_input_field(name, typ, None, comment).optional()
             })
             .collect();
 
         // @@id compound field (there can be only one per model).
         let compound_id_field = compound_id
             .as_ref()
-            .map(|(name, typ)| simple_input_field(name.clone(), InputType::object(typ.clone()), None).optional());
+            .map(|(name, typ)| simple_input_field(name.clone(), InputType::object(typ.clone()), None, None).optional());
 
         // Boolean operators AND/OR/NOT, which are _not_ where unique inputs
         let where_input_type = InputType::object(where_object_type(ctx, ParentContainer::Model(model.clone())));
@@ -162,23 +166,23 @@ pub(crate) fn where_unique_object_type(ctx: &'_ QuerySchema, model: Model) -> In
                 filters::AND,
                 vec![where_input_type.clone(), InputType::list(where_input_type.clone())],
                 None,
+                None,
             )
             .optional(),
-            input_field(filters::OR, vec![InputType::list(where_input_type.clone())], None).optional(),
+            input_field(filters::OR, vec![InputType::list(where_input_type.clone())], None, None).optional(),
             input_field(
                 filters::NOT,
                 vec![where_input_type.clone(), InputType::list(where_input_type)],
+                None,
                 None,
             )
             .optional(),
         ];
 
         // @@unique compound fields.
-        fields.extend(
-            compound_uniques
-                .iter()
-                .map(|(name, typ)| simple_input_field(name.clone(), InputType::object(typ.clone()), None).optional()),
-        );
+        fields.extend(compound_uniques.iter().map(|(name, typ)| {
+            simple_input_field(name.clone(), InputType::object(typ.clone()), None, None).optional()
+        }));
         fields.extend(compound_id_field);
 
         fields.extend(boolean_operators);
@@ -218,7 +222,7 @@ fn compound_field_unique_object_type<'a>(
                 let name = field.name().to_owned();
                 let typ = map_scalar_input_type_for_field(ctx, &field);
 
-                simple_input_field(name, typ, None)
+                simple_input_field(name, typ, None, field.borrow_comment(&ctx.internal_data_model.schema))
             })
             .collect()
     });
@@ -238,9 +242,14 @@ pub(crate) fn composite_equality_object(ctx: &'_ QuerySchema, cf: CompositeField
         let input_fields = composite_type.fields().map(|f| match f {
             ModelField::Scalar(sf) => {
                 let map_scalar_input_type_for_field = map_scalar_input_type_for_field(ctx, &sf);
-                simple_input_field(sf.name().to_owned(), map_scalar_input_type_for_field, None)
-                    .optional_if(!sf.is_required())
-                    .nullable_if(!sf.is_required() && !sf.is_list())
+                simple_input_field(
+                    sf.name().to_owned(),
+                    map_scalar_input_type_for_field,
+                    None,
+                    sf.borrow_comment(&ctx.internal_data_model.schema),
+                )
+                .optional_if(!sf.is_required())
+                .nullable_if(!sf.is_required() && !sf.is_list())
             }
 
             ModelField::Composite(cf) => {
@@ -250,9 +259,14 @@ pub(crate) fn composite_equality_object(ctx: &'_ QuerySchema, cf: CompositeField
                     InputType::object(composite_equality_object(ctx, cf.clone()))
                 };
 
-                simple_input_field(cf.name().to_owned(), field_type, None)
-                    .optional_if(!cf.is_required())
-                    .nullable_if(!cf.is_required() && !cf.is_list())
+                simple_input_field(
+                    cf.name().to_owned(),
+                    field_type,
+                    None,
+                    cf.borrowed_comment(&ctx.internal_data_model.schema),
+                )
+                .optional_if(!cf.is_required())
+                .nullable_if(!cf.is_required() && !cf.is_list())
             }
 
             ModelField::Relation(_) => unimplemented!(),

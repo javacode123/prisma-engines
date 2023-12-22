@@ -19,8 +19,8 @@ fn field_ref_input_object_type(allow_type: InputType<'_>) -> InputObjectType<'_>
     object.set_tag(ObjectTag::FieldRefType(Box::new(allow_type)));
     object.set_fields(|| {
         vec![
-            input_field(filters::UNDERSCORE_REF, vec![InputType::string()], None),
-            input_field(filters::UNDERSCORE_CONTAINER, vec![InputType::string()], None),
+            input_field(filters::UNDERSCORE_REF, vec![InputType::string()], None, None),
+            input_field(filters::UNDERSCORE_CONTAINER, vec![InputType::string()], None, None),
         ]
     });
     object

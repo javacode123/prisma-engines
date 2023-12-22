@@ -45,6 +45,7 @@ fn find_unique_field(ctx: &QuerySchema, model: Model) -> OutputField<'_> {
             model: Some(model_id),
             tag: QueryTag::FindUnique,
         }),
+        None,
     )
     .nullable()
 }
@@ -62,6 +63,7 @@ fn find_unique_or_throw_field(ctx: &QuerySchema, model: Model) -> OutputField<'_
             model: Some(model_id),
             tag: QueryTag::FindUniqueOrThrow,
         }),
+        None,
     )
     .nullable()
 }
@@ -79,6 +81,7 @@ fn find_first_field(ctx: &QuerySchema, model: Model) -> OutputField<'_> {
             model: Some(model.id),
             tag: QueryTag::FindFirst,
         }),
+        None,
     )
     .nullable()
 }
@@ -98,6 +101,7 @@ fn find_first_or_throw_field(ctx: &QuerySchema, model: Model) -> OutputField<'_>
             model: Some(model_id),
             tag: QueryTag::FindFirstOrThrow,
         }),
+        None,
     )
     .nullable()
 }
@@ -116,6 +120,7 @@ fn all_items_field(ctx: &QuerySchema, model: Model) -> OutputField<'_> {
             model: Some(model_id),
             tag: QueryTag::FindMany,
         }),
+        None,
     )
 }
 
@@ -131,6 +136,7 @@ fn plain_aggregation_field(ctx: &QuerySchema, model: Model) -> OutputField<'_> {
             model: Some(model_id),
             tag: QueryTag::Aggregate,
         }),
+        None,
     )
 }
 
@@ -148,6 +154,7 @@ fn group_by_aggregation_field(ctx: &QuerySchema, model: Model) -> OutputField<'_
             model: Some(model_id),
             tag: QueryTag::GroupBy,
         }),
+        None,
     )
 }
 
@@ -158,8 +165,8 @@ fn mongo_aggregate_raw_field<'a>(model: &Model) -> OutputField<'a> {
         field_name,
         || {
             vec![
-                input_field("pipeline", vec![InputType::list(InputType::json())], None).optional(),
-                input_field("options", vec![InputType::json()], None).optional(),
+                input_field("pipeline", vec![InputType::list(InputType::json())], None, None).optional(),
+                input_field("options", vec![InputType::json()], None, None).optional(),
             ]
         },
         OutputType::non_list(OutputType::json()),
@@ -167,6 +174,7 @@ fn mongo_aggregate_raw_field<'a>(model: &Model) -> OutputField<'a> {
             tag: QueryTag::AggregateRaw,
             model: Some(model.id),
         }),
+        None,
     )
 }
 
@@ -177,8 +185,8 @@ fn mongo_find_raw_field<'a>(model: &Model) -> OutputField<'a> {
         field_name,
         || {
             vec![
-                input_field("filter", vec![InputType::json()], None).optional(),
-                input_field("options", vec![InputType::json()], None).optional(),
+                input_field("filter", vec![InputType::json()], None, None).optional(),
+                input_field("options", vec![InputType::json()], None, None).optional(),
             ]
         },
         OutputType::non_list(OutputType::json()),
@@ -186,5 +194,6 @@ fn mongo_find_raw_field<'a>(model: &Model) -> OutputField<'a> {
             tag: QueryTag::FindRaw,
             model: Some(model.id),
         }),
+        None,
     )
 }

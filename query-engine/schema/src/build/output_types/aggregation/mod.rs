@@ -64,7 +64,7 @@ where
             is_count,
         ));
 
-        Some(field_no_arguments(name.to_owned(), object_type, None).nullable())
+        Some(field_no_arguments(name.to_owned(), object_type, None, None).nullable())
     }
 }
 
@@ -94,7 +94,10 @@ where
         fields
             .clone()
             .into_iter()
-            .map(|sf| field_no_arguments(sf.name().to_owned(), type_mapper(ctx, sf), None).nullable_if(!is_count))
+            .map(|sf| {
+                let comment = sf.borrow_comment(&ctx.internal_data_model.schema);
+                field_no_arguments(sf.name().to_owned(), type_mapper(ctx, sf), None, comment).nullable_if(!is_count)
+            })
             .collect()
     }))
 }

@@ -19,16 +19,17 @@ pub(crate) fn create_many(ctx: &'_ QuerySchema, model: Model) -> OutputField<'_>
             model: Some(model_id),
             tag: QueryTag::CreateMany,
         }),
+        None,
     )
 }
 
 /// Builds "skip_duplicates" and "data" arguments intended for the create many field.
 pub(crate) fn create_many_arguments(ctx: &'_ QuerySchema, model: Model) -> Vec<InputField<'_>> {
     let create_many_type = InputType::object(create_many_object_type(ctx, model, None));
-    let data_arg = input_field(args::DATA, list_union_type(create_many_type, true), None);
+    let data_arg = input_field(args::DATA, list_union_type(create_many_type, true), None, None);
 
     if ctx.has_capability(ConnectorCapability::CreateSkipDuplicates) {
-        let skip_arg = input_field(args::SKIP_DUPLICATES, vec![InputType::boolean()], None).optional();
+        let skip_arg = input_field(args::SKIP_DUPLICATES, vec![InputType::boolean()], None, None).optional();
 
         vec![data_arg, skip_arg]
     } else {

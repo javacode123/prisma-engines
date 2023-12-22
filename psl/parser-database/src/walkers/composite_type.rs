@@ -81,6 +81,11 @@ impl<'db> CompositeTypeFieldWalker<'db> {
         self.ast_field().name()
     }
 
+    /// the comment of the filed.
+    pub fn comment(self) -> Option<&'db str> {
+        self.ast_field().comment()
+    }
+
     /// Is the field required, optional or a list?
     pub fn arity(self) -> ast::FieldArity {
         self.ast_field().arity

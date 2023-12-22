@@ -21,6 +21,7 @@ pub(crate) fn create_one(ctx: &QuerySchema, model: Model) -> OutputField<'_> {
             model: Some(model_id),
             tag: QueryTag::CreateOne,
         }),
+        None,
     )
 }
 
@@ -32,7 +33,7 @@ pub(crate) fn create_one_arguments(ctx: &QuerySchema, model: Model) -> Option<Ve
         .all()
         .any(|f| f.is_required() && f.as_scalar().map(|f| f.default_value().is_none()).unwrap_or(true));
     let create_types = create_one_input_types(ctx, model, None);
-    let field = input_field(args::DATA, create_types, None);
+    let field = input_field(args::DATA, create_types, None, None);
     Some(vec![field.optional_if(!any_field_required)])
 }
 

@@ -28,6 +28,7 @@ pub(crate) fn aggregation_object_type(ctx: &'_ QuerySchema, model: Model) -> Obj
                             "_all",
                             OutputType::non_list(OutputType::int()),
                             None,
+                            None,
                         ));
                         fields
                     })));

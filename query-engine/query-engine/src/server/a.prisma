@@ -1,0 +1,26 @@
+datasource db {
+  provider = "mysql"
+  url      = "mysql://root:123456,zjl@localhost:3306/zjl"
+}
+
+model Post {
+  id Int @id
+
+  title String
+
+  userId Int
+
+  User User @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "Post_userId_fkey")
+}
+
+model User {
+  id Int @id
+
+  email String @unique
+
+  name String
+
+  Post Post[]
+}

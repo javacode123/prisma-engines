@@ -52,7 +52,12 @@ impl DataInputFieldMapper for UpdateDataInputFieldMapper {
         match sf.type_identifier() {
             TypeIdentifier::Json if has_adv_json => {
                 let enum_type = InputType::enum_type(json_null_input_enum(!sf.is_required()));
-                let input_field = input_field(sf.name().to_owned(), vec![enum_type, base_update_type], None);
+                let input_field = input_field(
+                    sf.name().to_owned(),
+                    vec![enum_type, base_update_type],
+                    None,
+                    sf.borrow_comment(&ctx.internal_data_model.schema),
+                );
 
                 input_field.optional()
             }
@@ -60,7 +65,12 @@ impl DataInputFieldMapper for UpdateDataInputFieldMapper {
             _ => {
                 let types = vec![map_scalar_input_type_for_field(ctx, &sf), base_update_type];
 
-                let input_field = input_field(sf.name().to_owned(), types, None);
+                let input_field = input_field(
+                    sf.name().to_owned(),
+                    types,
+                    None,
+                    sf.borrow_comment(&ctx.internal_data_model.schema),
+                );
                 input_field.optional().nullable_if(!sf.is_required())
             }
         }
@@ -73,13 +83,20 @@ impl DataInputFieldMapper for UpdateDataInputFieldMapper {
         let type_identifier = sf.type_identifier();
 
         let mut input_object = input_object_type(ident, move || {
-            let mut object_fields = vec![simple_input_field(operations::SET, list_input_type.clone(), None).optional()];
+            let mut object_fields =
+                vec![simple_input_field(operations::SET, list_input_type.clone(), None, None).optional()];
 
             // Todo this capability looks wrong to me.
             if ctx.has_capability(ConnectorCapability::EnumArrayPush) {
                 let map_scalar_type = map_scalar_input_type(ctx, type_identifier, false);
                 object_fields.push(
-                    input_field(operations::PUSH, vec![map_scalar_type, list_input_type.clone()], None).optional(),
+                    input_field(
+                        operations::PUSH,
+                        vec![map_scalar_type, list_input_type.clone()],
+                        None,
+                        None,
+                    )
+                    .optional(),
                 )
             }
             object_fields
@@ -87,7 +104,13 @@ impl DataInputFieldMapper for UpdateDataInputFieldMapper {
         input_object.require_exactly_one_field();
 
         let input_type = InputType::object(input_object);
-        input_field(sf.name().to_owned(), vec![input_type, cloned_list_input_type], None).optional()
+        input_field(
+            sf.name().to_owned(),
+            vec![input_type, cloned_list_input_type],
+            None,
+            sf.borrow_comment(&ctx.internal_data_model.schema),
+        )
+        .optional()
     }
 
     fn map_relation<'a>(&self, ctx: &'a QuerySchema, rf: RelationFieldRef) -> InputField<'a> {
@@ -97,6 +120,7 @@ impl DataInputFieldMapper for UpdateDataInputFieldMapper {
             self.unchecked,
         ));
         let rf_name = rf.name().to_owned();
+        let comment = rf.borrowed_comment(&ctx.internal_data_model.schema);
 
         let mut input_object = init_input_object_type(ident);
         input_object.set_fields(move || {
@@ -128,7 +152,7 @@ impl DataInputFieldMapper for UpdateDataInputFieldMapper {
             fields
         });
 
-        simple_input_field(rf_name, InputType::object(input_object), None).optional()
+        simple_input_field(rf_name, InputType::object(input_object), None, comment).optional()
     }
 
     fn map_composite<'a>(&self, ctx: &'a QuerySchema, cf: CompositeFieldRef) -> InputField<'a> {
@@ -144,9 +168,14 @@ impl DataInputFieldMapper for UpdateDataInputFieldMapper {
             input_types.push(InputType::list(shorthand_type));
         }
 
-        input_field(cf.name().to_owned(), input_types, None)
-            .nullable_if(cf.is_optional() && !cf.is_list())
-            .optional()
+        input_field(
+            cf.name().to_owned(),
+            input_types,
+            None,
+            cf.borrowed_comment(&ctx.internal_data_model.schema),
+        )
+        .nullable_if(cf.is_optional() && !cf.is_list())
+        .optional()
     }
 }
 
@@ -165,19 +194,19 @@ fn update_operations_object_type<'a>(
     obj.require_exactly_one_field();
     obj.set_fields(move || {
         let typ = map_scalar_input_type_for_field(ctx, &sf);
-        let mut fields = vec![simple_input_field(operations::SET, typ.clone(), None)
+        let mut fields = vec![simple_input_field(operations::SET, typ.clone(), None, None)
             .optional()
             .nullable_if(!sf.is_required())];
 
         if with_number_operators {
-            fields.push(simple_input_field(operations::INCREMENT, typ.clone(), None).optional());
-            fields.push(simple_input_field(operations::DECREMENT, typ.clone(), None).optional());
-            fields.push(simple_input_field(operations::MULTIPLY, typ.clone(), None).optional());
-            fields.push(simple_input_field(operations::DIVIDE, typ, None).optional());
+            fields.push(simple_input_field(operations::INCREMENT, typ.clone(), None, None).optional());
+            fields.push(simple_input_field(operations::DECREMENT, typ.clone(), None, None).optional());
+            fields.push(simple_input_field(operations::MULTIPLY, typ.clone(), None, None).optional());
+            fields.push(simple_input_field(operations::DIVIDE, typ, None, None).optional());
         }
 
         if ctx.has_capability(ConnectorCapability::UndefinedType) && !sf.is_required() {
-            fields.push(simple_input_field(operations::UNSET, InputType::boolean(), None).optional());
+            fields.push(simple_input_field(operations::UNSET, InputType::boolean(), None, None).optional());
         }
 
         fields
@@ -235,7 +264,7 @@ fn composite_update_input_field(ctx: &'_ QuerySchema, cf: CompositeFieldRef) -> 
     if cf.is_required() {
         let update_object_type = composite_update_object_type(ctx, cf);
 
-        Some(simple_input_field(operations::UPDATE, InputType::Object(update_object_type), None).optional())
+        Some(simple_input_field(operations::UPDATE, InputType::Object(update_object_type), None, None).optional())
     } else {
         None
     }
@@ -244,7 +273,7 @@ fn composite_update_input_field(ctx: &'_ QuerySchema, cf: CompositeFieldRef) -> 
 // Builds an `unset` input field. Should only be used in the envelope type.
 fn composite_unset_update_input_field<'a>(cf: &CompositeFieldRef) -> Option<InputField<'a>> {
     if cf.is_optional() {
-        Some(simple_input_field(operations::UNSET, InputType::boolean(), None).optional())
+        Some(simple_input_field(operations::UNSET, InputType::boolean(), None, None).optional())
     } else {
         None
     }
@@ -260,7 +289,7 @@ fn composite_set_update_input_field<'a>(ctx: &'a QuerySchema, cf: &CompositeFiel
         input_types.push(InputType::list(set_object_type));
     }
 
-    input_field(operations::SET, input_types, None)
+    input_field(operations::SET, input_types, None, None)
         .nullable_if(!cf.is_required() && !cf.is_list())
         .optional()
 }
@@ -271,7 +300,7 @@ fn composite_push_update_input_field<'a>(ctx: &'a QuerySchema, cf: &CompositeFie
         let set_object_type = InputType::Object(create::composite_create_object_type(ctx, cf.clone()));
         let input_types = vec![set_object_type.clone(), InputType::list(set_object_type)];
 
-        Some(input_field(operations::PUSH, input_types, None).optional())
+        Some(input_field(operations::PUSH, input_types, None, None).optional())
     } else {
         None
     }
@@ -285,7 +314,7 @@ fn composite_upsert_object_type(ctx: &'_ QuerySchema, cf: CompositeFieldRef) -> 
     input_object.set_tag(ObjectTag::CompositeEnvelope);
     input_object.set_fields(move || {
         let update_object_type = composite_update_object_type(ctx, cf.clone());
-        let update_field = simple_input_field(operations::UPDATE, InputType::Object(update_object_type), None);
+        let update_field = simple_input_field(operations::UPDATE, InputType::Object(update_object_type), None, None);
         let set_field = composite_set_update_input_field(ctx, &cf).required();
 
         vec![set_field, update_field]
@@ -298,7 +327,7 @@ fn composite_upsert_update_input_field(ctx: &'_ QuerySchema, cf: CompositeFieldR
     if cf.is_optional() {
         let upsert_object_type = InputType::Object(composite_upsert_object_type(ctx, cf));
 
-        Some(simple_input_field(operations::UPSERT, upsert_object_type, None).optional())
+        Some(simple_input_field(operations::UPSERT, upsert_object_type, None, None).optional())
     } else {
         None
     }
@@ -311,10 +340,10 @@ fn composite_update_many_object_type(ctx: &'_ QuerySchema, cf: CompositeFieldRef
     input_object.set_tag(ObjectTag::CompositeEnvelope);
     input_object.set_fields(move || {
         let where_object_type = objects::filter_objects::where_object_type(ctx, cf.typ().into());
-        let where_field = simple_input_field(args::WHERE, InputType::object(where_object_type), None);
+        let where_field = simple_input_field(args::WHERE, InputType::object(where_object_type), None, None);
 
         let update_object_type = composite_update_object_type(ctx, cf);
-        let data_field = simple_input_field(args::DATA, InputType::Object(update_object_type), None);
+        let data_field = simple_input_field(args::DATA, InputType::Object(update_object_type), None, None);
 
         vec![where_field, data_field]
     });
@@ -329,7 +358,7 @@ fn composite_delete_many_object_type(ctx: &'_ QuerySchema, cf: CompositeFieldRef
     input_object.set_tag(ObjectTag::CompositeEnvelope);
     input_object.set_fields(move || {
         let where_object_type = objects::filter_objects::where_object_type(ctx, cf.typ().into());
-        let where_field = simple_input_field(args::WHERE, InputType::object(where_object_type), None);
+        let where_field = simple_input_field(args::WHERE, InputType::object(where_object_type), None, None);
 
         vec![where_field]
     });
@@ -341,7 +370,7 @@ fn composite_update_many_update_input_field(ctx: &'_ QuerySchema, cf: CompositeF
     if cf.is_list() {
         let update_many = InputType::Object(composite_update_many_object_type(ctx, cf));
 
-        Some(simple_input_field(operations::UPDATE_MANY, update_many, None).optional())
+        Some(simple_input_field(operations::UPDATE_MANY, update_many, None, None).optional())
     } else {
         None
     }
@@ -352,7 +381,7 @@ fn composite_delete_many_update_input_field(ctx: &'_ QuerySchema, cf: CompositeF
     if cf.is_list() {
         let delete_many = InputType::Object(composite_delete_many_object_type(ctx, cf));
 
-        Some(simple_input_field(operations::DELETE_MANY, delete_many, None).optional())
+        Some(simple_input_field(operations::DELETE_MANY, delete_many, None, None).optional())
     } else {
         None
     }

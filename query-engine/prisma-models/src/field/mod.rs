@@ -26,6 +26,15 @@ impl Field {
         }
     }
 
+    pub fn borrowed_comment<'a>(&self, schema: &'a psl::ValidatedSchema) -> Option<&'a str> {
+        match self {
+            // 关联字段
+            Field::Relation(rf) => rf.borrowed_comment(schema),
+            Field::Scalar(sf) => sf.borrow_comment(schema),
+            Field::Composite(cf) => cf.borrowed_comment(schema),
+        }
+    }
+
     pub fn name(&self) -> &str {
         match self {
             Field::Scalar(ref sf) => sf.name(),

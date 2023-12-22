@@ -183,6 +183,8 @@ pub struct OutputField<'a> {
     pub is_nullable: bool,
 
     pub(super) query_info: Option<QueryInfo>,
+
+    pub comment: Option<&'a str>,
 }
 
 impl Debug for OutputField<'_> {
@@ -244,5 +246,9 @@ impl<'a> OutputField<'a> {
     pub fn maps_to_relation(&self) -> bool {
         let o = self.field_type.as_object_type();
         o.is_some() && o.unwrap().model.is_some()
+    }
+
+    pub fn comment(&self) -> Option<&'a str> {
+        self.comment
     }
 }

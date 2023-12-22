@@ -224,7 +224,7 @@ impl PrismaOpt {
         self.engine_protocol
             .as_ref()
             .map(EngineProtocol::from)
-            .unwrap_or(EngineProtocol::Json)
+            .unwrap_or(EngineProtocol::Graphql)
     }
 }
 

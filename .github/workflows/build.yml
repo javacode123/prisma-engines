@@ -16,96 +16,96 @@ jobs:
 
     runs-on: ubuntu-latest
     strategy:
-        fail-fast: false
-        matrix:
-          target:
-            # Linux Glibc rhel [rhel] https://github.com/steebchen/prisma-client-go/issues/1107
-            - name: "rhel-openssl-1.0.x" 
-              image: 'prismagraphql/build:rhel-libssl1.0.x'
-              target_string: ''
-              target_path: ''
-              features_string: '--features vendored-openssl'
-            - name: "rhel-openssl-1.1.x"
-              image: 'prismagraphql/build:rhel-libssl1.1.x'
-              target_string: ''
-              target_path: ''
-              features_string: ''
-            - name: "rhel-openssl-3.0.x"
-              image: 'prismagraphql/build:rhel-libssl3.0.x'
-              target_string: ''
-              target_path: ''
-              features_string: ''
-            # Linux Glibc debian [debian]
-            - name: "debian-openssl-1.0.x"
-              image: 'prismagraphql/build:debian-libssl1.0.x'
-              target_string: ''
-              target_path: ''
-              features_string: '--features vendored-openssl'
-            - name: "debian-openssl-1.1.x"
-              image: 'prismagraphql/build:debian-libssl1.1.x'
-              target_string: ''
-              target_path: ''
-              features_string: ''
-            - name: "debian-openssl-3.0.x"
-              image: 'prismagraphql/build:debian-libssl3.0.x'
-              target_string: ''
-              target_path: ''
-              features_string: ''
-            # Linux Musl musl [linux-musl]
-            - name: "linux-musl-openssl-1.1.x"
-              image: 'prismagraphql/build:alpine-libssl1.1.x'
-              target_string: ''
-              target_path: ''
-              features_string: ''
-            - name: "linux-musl-openssl-3.0.x"
-              image: 'prismagraphql/build:alpine-libssl3.0.x'
-              target_string: ''
-              target_path: ''
-              features_string: ''
-            - name: "linux-musl"
-              image: 'prismagraphql/build:alpine'
-              target_string: ''
-              target_path: ''
-              features_string: ''
-            # Linux Static [linux-static]
-            - name: "linux-static-x64"
-              image: 'prismagraphql/build:linux-static-x64'
-              target_string: '--target x86_64-unknown-linux-musl'
-              target_path: 'x86_64-unknown-linux-musl'
-              features_string: '--features vendored-openssl'
-            # Linux Arm64 Glibc [linux-arm64]
-            - name: "linux-arm64-openssl-1.0.x"
-              image: 'prismagraphql/build:cross-linux-arm-ssl-1.0.x'
-              target_string: '--target aarch64-unknown-linux-gnu'
-              target_path: 'aarch64-unknown-linux-gnu'
-              features_string: '--features vendored-openssl'
-            - name: "linux-arm64-openssl-1.1.x"
-              image: 'prismagraphql/build:cross-linux-arm-ssl-1.1.x'
-              target_string: '--target aarch64-unknown-linux-gnu'
-              target_path: 'aarch64-unknown-linux-gnu'
-              features_string: ''
-            - name: "linux-arm64-openssl-3.0.x"
-              image: 'prismagraphql/build:cross-linux-arm-ssl-3.0.x'
-              target_string: '--target aarch64-unknown-linux-gnu'
-              target_path: 'aarch64-unknown-linux-gnu'
-              features_string: ''
-            # Linux Arm64 Musl [linux-musl-arm64]
-            - name: "linux-musl-arm64-openssl-1.1.x"
-              image: 'prismagraphql/build:cross-linux-musl-arm-ssl-1.1.x'
-              target_string: '--target aarch64-unknown-linux-musl'
-              target_path: 'aarch64-unknown-linux-musl'
-              features_string: ''
-            - name: "linux-musl-arm64-openssl-3.0.x"
-              image: 'prismagraphql/build:cross-linux-musl-arm-ssl-3.0.x'
-              target_string: '--target aarch64-unknown-linux-musl'
-              target_path: 'aarch64-unknown-linux-musl'
-              features_string: ''
-            # Linux Arm64 Static [linux-static-arm64]
-            - name: "linux-static-arm64"
-              image: 'prismagraphql/build:linux-static-arm64'
-              target_string: '--target aarch64-unknown-linux-musl'
-              target_path: 'aarch64-unknown-linux-musl'
-              features_string: '--features vendored-openssl'
+      fail-fast: false
+      matrix:
+        target:
+          # Linux Glibc rhel [rhel]
+          - name: "rhel-openssl-1.0.x"
+            image: 'prismagraphql/build:rhel-libssl1.0.x'
+            target_string: ''
+            target_path: ''
+            features_string: '--features vendored-openssl'
+          - name: "rhel-openssl-1.1.x"
+            image: 'prismagraphql/build:rhel-libssl1.1.x'
+            target_string: ''
+            target_path: ''
+            features_string: ''
+          - name: "rhel-openssl-3.0.x"
+            image: 'prismagraphql/build:rhel-libssl3.0.x'
+            target_string: ''
+            target_path: ''
+            features_string: ''
+          # Linux Glibc debian [debian]
+          - name: "debian-openssl-1.0.x"
+            image: 'prismagraphql/build:debian-libssl1.0.x'
+            target_string: ''
+            target_path: ''
+            features_string: '--features vendored-openssl'
+          - name: "debian-openssl-1.1.x"
+            image: 'prismagraphql/build:debian-libssl1.1.x'
+            target_string: ''
+            target_path: ''
+            features_string: ''
+          - name: "debian-openssl-3.0.x"
+            image: 'prismagraphql/build:debian-libssl3.0.x'
+            target_string: ''
+            target_path: ''
+            features_string: ''
+          # Linux Musl musl [linux-musl]
+          - name: "linux-musl-openssl-1.1.x"
+            image: 'prismagraphql/build:alpine-libssl1.1.x'
+            target_string: ''
+            target_path: ''
+            features_string: ''
+          - name: "linux-musl-openssl-3.0.x"
+            image: 'prismagraphql/build:alpine-libssl3.0.x'
+            target_string: ''
+            target_path: ''
+            features_string: ''
+          - name: "linux-musl"
+            image: 'prismagraphql/build:alpine'
+            target_string: ''
+            target_path: ''
+            features_string: ''
+          # Linux Static [linux-static]
+          - name: "linux-static-x64"
+            image: 'prismagraphql/build:linux-static-x64'
+            target_string: '--target x86_64-unknown-linux-musl'
+            target_path: 'x86_64-unknown-linux-musl'
+            features_string: '--features vendored-openssl'
+          # Linux Arm64 Glibc [linux-arm64]
+          - name: "linux-arm64-openssl-1.0.x"
+            image: 'prismagraphql/build:cross-linux-arm-ssl-1.0.x'
+            target_string: '--target aarch64-unknown-linux-gnu'
+            target_path: 'aarch64-unknown-linux-gnu'
+            features_string: '--features vendored-openssl'
+          - name: "linux-arm64-openssl-1.1.x"
+            image: 'prismagraphql/build:cross-linux-arm-ssl-1.1.x'
+            target_string: '--target aarch64-unknown-linux-gnu'
+            target_path: 'aarch64-unknown-linux-gnu'
+            features_string: ''
+          - name: "linux-arm64-openssl-3.0.x"
+            image: 'prismagraphql/build:cross-linux-arm-ssl-3.0.x'
+            target_string: '--target aarch64-unknown-linux-gnu'
+            target_path: 'aarch64-unknown-linux-gnu'
+            features_string: ''
+          # Linux Arm64 Musl [linux-musl-arm64]
+          - name: "linux-musl-arm64-openssl-1.1.x"
+            image: 'prismagraphql/build:cross-linux-musl-arm-ssl-1.1.x'
+            target_string: '--target aarch64-unknown-linux-musl'
+            target_path: 'aarch64-unknown-linux-musl'
+            features_string: ''
+          - name: "linux-musl-arm64-openssl-3.0.x"
+            image: 'prismagraphql/build:cross-linux-musl-arm-ssl-3.0.x'
+            target_string: '--target aarch64-unknown-linux-musl'
+            target_path: 'aarch64-unknown-linux-musl'
+            features_string: ''
+          # Linux Arm64 Static [linux-static-arm64]
+          - name: "linux-static-arm64"
+            image: 'prismagraphql/build:linux-static-arm64'
+            target_string: '--target aarch64-unknown-linux-musl'
+            target_path: 'aarch64-unknown-linux-musl'
+            features_string: '--features vendored-openssl'
     steps:
       - name: Output link to real commit
         if: ${{ github.event.inputs.commit }}
@@ -136,8 +136,9 @@ jobs:
         env:
           TARGET_NAME: ${{ matrix.target.name }}
           IMAGE: ${{ matrix.target.image }}
-          TARGET_STRING: ${{ matrix.target.target_string }} 
+          TARGET_STRING: ${{ matrix.target.target_string }}
           FEATURES_STRING: ${{ matrix.target.features_string }}
+          BIN_PATH: ${{ github.workspace }}/target/release
         run: |
           command="docker run \
             -e SQLITE_MAX_VARIABLE_NUMBER=250000 \
@@ -152,16 +153,17 @@ jobs:
               && rustup default 1.67.0 \
               && cargo clean \
               && cargo build --release -p query-engine          --manifest-path query-engine/query-engine/Cargo.toml          $TARGET_STRING $FEATURES_STRING \
-              && cargo build --release -p query-engine-node-api --manifest-path query-engine/query-engine-node-api/Cargo.toml $TARGET_STRING $FEATURES_STRING \
               && cargo build --release -p schema-engine-cli     --manifest-path schema-engine/cli/Cargo.toml                  $TARGET_STRING $FEATURES_STRING \
-              && cargo build --release -p prisma-fmt            --manifest-path prisma-fmt/Cargo.toml                         $TARGET_STRING $FEATURES_STRING \
+              && mkdir -p ./target/bin \
+              && gzip -f ./target/release/schema-engine > ./target/bin/schema-engine.gz \
+              && gzip -f ./target/release/query-engine > ./target/bin/query-engine.gz \
               \" \
             "
-          if [[ "$TARGET_NAME" == *static* ]]; then
-            substring_to_replace="&& cargo build --release -p query-engine-node-api --manifest-path query-engine/query-engine-node-api/Cargo.toml $TARGET_STRING $FEATURES_STRING"
-            replacement_string=""
-            command=$(echo "$command" | sed "s|$substring_to_replace|$replacement_string|")
+          if [[ -n "$TARGET_STRING" ]]; then 
+            command=$(echo "$command" | sed "s|target/release/schema-engine|target/$(echo $TARGET_STRING | awk '{print $NF}')/release/schema-engine|")
+            command=$(echo "$command" | sed "s|target/release/query-engine|target/$(echo $TARGET_STRING | awk '{print $NF}')/release/query-engine|") 
           fi
+   
           if [[ -n "$TARGET_STRING" ]]; then
             command=$(echo "$command" | sed "s|rustup default 1.67.0|rustup default 1.67.0 \&\& rustup target add $(echo $TARGET_STRING | awk '{print $NF}')|")
           fi
@@ -175,24 +177,44 @@ jobs:
       - name: Execute Build command
         run:  ${{ steps.construct_build_command.outputs.command }}
 
-      - uses: actions/upload-artifact@v3
-        if: ${{ matrix.target.target_path == '' }} 
+      - uses: ryand56/r2-upload-action@latest
+        if: ${{ matrix.target.target_path == '' }}
         with:
-          name: ${{ matrix.target.name }}
-          path: |
-            ${{ github.workspace }}/target/release/schema-engine
-            # ${{ github.workspace }}/target/release/query-engine
-            # ${{ github.workspace }}/target/release/prisma-fmt
+          r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket: ${{ secrets.R2_BUCKET }}
+          source-dir: ${{ github.workspace }}/target/bin
+          destination-dir: ./${{ github.event.inputs.commit }}/${{ matrix.target.name }}/
 
-      - uses: actions/upload-artifact@v3
-        if: ${{ matrix.target.target_path != '' }} 
+      - uses: ryand56/r2-upload-action@latest
+        if: ${{ matrix.target.target_path != '' }}
         with:
-          name: ${{ matrix.target.name }}
-          path: |
-            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/libquery_engine.dylib
-            ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/schema-engine
-            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/query-engine
-            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/prisma-fmt
+          r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket: ${{ secrets.R2_BUCKET }}
+          source-dir: ${{ github.workspace }}/target/bin
+          destination-dir: ./${{ github.event.inputs.commit }}/${{ matrix.target.name }}/
+
+#      - uses: actions/upload-artifact@v3
+#        if: ${{ matrix.target.target_path == '' }}
+#        with:
+#          name: ${{ matrix.target.name }}
+#          path: |
+#            ${{ github.workspace }}/target/release/schema-engine.gz
+#            ${{ github.workspace }}/target/release/query-engine.gz
+#            # ${{ github.workspace }}/target/release/prisma-fmt
+#
+#      - uses: actions/upload-artifact@v3
+#        if: ${{ matrix.target.target_path != '' }}
+#        with:
+#          name: ${{ matrix.target.name }}
+#          path: |
+#            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/libquery_engine.dylib
+#            ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/schema-engine.gz
+#            ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/query-engine.gz
+#            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/prisma-fmt
 
   build-darwin:
     name: "${{ matrix.target.name }} (on branch ${{ github.event.ref }} for commit ${{ github.event.inputs.commit }})"
@@ -205,7 +227,7 @@ jobs:
 
     strategy:
       matrix:
-        target: 
+        target:
           - name: "darwin"
             target_string: ''
             target_path: ''
@@ -223,7 +245,7 @@ jobs:
           ref: ${{ github.event.inputs.commit }}
 
       - uses: dtolnay/rust-toolchain@stable
-      
+
       - name: Install aarch64 toolchain
         if: ${{ matrix.target.name == 'darwin-arm64' }}
         run: |
@@ -239,16 +261,34 @@ jobs:
           key: ${{ runner.os }}-intel-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - run: |
-          cargo build --release -p query-engine -p query-engine-node-api -p schema-engine-cli -p prisma-fmt ${{ matrix.target.target_string }}
+          cargo build --release -p query-engine -p schema-engine-cli ${{ matrix.target.target_string }}
 
-      - uses: actions/upload-artifact@v3
+      - name: Compress
+        run:  |
+          mkdir -p ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin
+          gzip ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/schema-engine -c > ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin/schema-engine.gz
+          gzip ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/query-engine -c > ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin/query-engine.gz
+
+      - name: R2 Upload Action
+        uses: ryand56/r2-upload-action@latest
         with:
-          name: ${{ matrix.target.name }}
-          path: |
-            ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/schema-engine
-            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/prisma-fmt
-            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/query-engine
-            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/libquery_engine.dylib
+          r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket: ${{ secrets.R2_BUCKET }}
+          source-dir: ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin
+          destination-dir: ./${{ github.event.inputs.commit }}/${{ matrix.target.name }}/
+
+#      - uses: actions/upload-artifact@v3
+#        with:
+#          name: ${{ matrix.target.name }}
+#          path: |
+#            ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/schema-engine.gz
+#            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/prisma-fmt
+#            ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/query-engine.gz
+#            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/libquery_engine.dylib
+
+
 
   build-windows:
     name: "Windows engines build on branch ${{ github.event.ref }} for commit ${{ github.event.inputs.commit }}"
@@ -277,11 +317,31 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - run: cargo build --release
+      - run: cargo build --release -p query-engine -p schema-engine-cli
 
-      - uses: actions/upload-artifact@v3
+      - name: Compress EXE
+        run: |
+          $destPath = "${{ github.workspace }}\target\bin"
+          if(!(Test-Path -Path $destPath )){
+            New-Item -ItemType directory -Path $destPath
+          }
+          Compress-Archive -Path ${{ github.workspace }}/target/release/schema-engine.exe -DestinationPath ${{ github.workspace }}/target/bin/schema-engine.exe.gz 
+          Compress-Archive -Path ${{ github.workspace }}/target/release/query-engine.exe -DestinationPath ${{ github.workspace }}/target/bin/query-engine.exe.gz
+
+      - name: R2 Upload Action
+        uses: ryand56/r2-upload-action@latest
         with:
-          name: windows
-          path: |
-            ${{ github.workspace }}/target/release/schema-engine.exe
-            ${{ github.workspace }}/target/release/schema-engine.dll
+            r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
+            r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+            r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+            r2-bucket: ${{ secrets.R2_BUCKET }}
+            source-dir: ${{ github.workspace }}/target/bin
+            destination-dir: ./${{ github.event.inputs.commit }}/windows/
+
+#      - uses: actions/upload-artifact@v3
+#        with:
+#          name: windows
+#          path: |
+#            ${{ github.workspace }}/target/release/schema-engine.exe.gz
+#            # ${{ github.workspace }}/target/release/schema-engine.dll
+#            ${{ github.workspace }}/target/release/query-engine.exe.gz

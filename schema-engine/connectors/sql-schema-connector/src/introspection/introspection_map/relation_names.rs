@@ -237,10 +237,20 @@ fn inline_relation_ambiguousness(
     }
 
     // ...or because the relation field name conflicts with one of the scalar fields' name.
-    let default_field_name = ctx.table_prisma_name(fk.referenced_table().id).prisma_name();
+    let referenced_field_name = ctx.table_prisma_name(fk.referenced_table().id).prisma_name();
     if fk
-        .constrained_columns()
-        .any(|col| default_field_name == ctx.table_column_prisma_name(col.id).prisma_name())
+        .table()
+        .columns()
+        .any(|col| referenced_field_name == ctx.table_column_prisma_name(col.id).prisma_name())
+    {
+        ambiguous_relations.insert(tables);
+    }
+
+    let reference_field_name = ctx.table_prisma_name(fk.table().id).prisma_name();
+    if fk
+        .referenced_table()
+        .columns()
+        .any(|col| reference_field_name == ctx.table_column_prisma_name(col.id).prisma_name())
     {
         ambiguous_relations.insert(tables);
     }

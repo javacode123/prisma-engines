@@ -325,23 +325,32 @@ jobs:
           if(!(Test-Path -Path $destPath )){
             New-Item -ItemType directory -Path $destPath
           }
-          Compress-Archive -Path ${{ github.workspace }}/target/release/schema-engine.exe -DestinationPath ${{ github.workspace }}/target/bin/schema-engine.exe.gz 
-          Compress-Archive -Path ${{ github.workspace }}/target/release/query-engine.exe -DestinationPath ${{ github.workspace }}/target/bin/query-engine.exe.gz
+          Compress-Archive -Path ${{ github.workspace }}\target\release\schema-engine.exe -DestinationPath ${{ github.workspace }}\target\bin\schema-engine.exe.gz 
+          Compress-Archive -Path ${{ github.workspace }}\target\release\query-engine.exe -DestinationPath ${{ github.workspace }}\target\bin\query-engine.exe.gz
 
-      - name: R2 Upload Action
-        uses: ryand56/r2-upload-action@latest
+      # - name: R2 Upload Action
+      #   uses: ryand56/r2-upload-action@latest
+      #   with:
+      #       r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
+      #       r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+      #       r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      #       r2-bucket: ${{ secrets.R2_BUCKET }}
+      #       source-dir: ${{ github.workspace }}\target\bin
+      #       destination-dir: .\${{ github.event.inputs.commit }}\windows
+      - name: Upload file to R2
+        uses: willfurstenau/r2-dir-upload@main
         with:
-            r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
-            r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
-            r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-            r2-bucket: ${{ secrets.R2_BUCKET }}
-            source-dir: ${{ github.workspace }}/target/bin
-            destination-dir: ./${{ github.event.inputs.commit }}/windows/
+            accountid: ${{ secrets.R2_ACCOUNT_ID }}
+            accesskeyid: ${{ secrets.R2_ACCESS_KEY_ID }}
+            secretaccesskey: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+            bucket: ${{ secrets.R2_BUCKET }}
+            source: ${{ github.workspace }}\target\bin
+            destination: .\${{ github.event.inputs.commit }}\windows
 
-#      - uses: actions/upload-artifact@v3
-#        with:
-#          name: windows
-#          path: |
-#            ${{ github.workspace }}/target/release/schema-engine.exe.gz
-#            # ${{ github.workspace }}/target/release/schema-engine.dll
-#            ${{ github.workspace }}/target/release/query-engine.exe.gz
+      - uses: actions/upload-artifact@v3
+        with:
+          name: windows
+          path: |
+            ${{ github.workspace }}/target/bin/schema-engine.exe.gz
+            # ${{ github.workspace }}/target/release/schema-engine.dll
+            ${{ github.workspace }}/target/bin/query-engine.exe.gz

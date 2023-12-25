@@ -27,7 +27,12 @@ impl<'a> fmt::Display for Documentation<'a> {
                 f.write_str(" ")?;
             }
 
-            f.write_str(line)?;
+            let line = line
+                .replace("\n", "\\n")
+                .replace("\t", "\\t")
+                .replace("\r", "\\r")
+                .replace("\"", "\\\"");
+            f.write_str(&line)?;
             f.write_str("\n")?;
         }
 

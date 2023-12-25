@@ -378,6 +378,23 @@ model User {
     }
 
     #[tokio::test]
+    async fn test_in() {
+        let intro_res = test_introspect(
+            &r##"datasource db {
+              provider = "mysql"
+                url      = "mysql://root:*@localhost:3306/zjl"
+        
+               }"##
+            .to_string(),
+        )
+        .await;
+        println!(
+            "introspect_res:\n{}\nwarnings:\n{:?}",
+            intro_res.datamodel, intro_res.warnings
+        );
+    }
+
+    #[tokio::test]
     async fn test_s() {
         tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).init();
         let source = r##"
@@ -414,7 +431,6 @@ model zjl {
             intro_res.datamodel, intro_res.warnings
         );
     }
-
     async fn test_introspect(schema: &String) -> IntrospectResult {
         let api = match schema_api(Some(schema.clone()), None) {
             Ok(api) => api,

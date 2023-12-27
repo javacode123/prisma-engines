@@ -11,7 +11,7 @@ use crate::value::{Function, FunctionParam};
 /// }
 /// ```
 #[derive(Debug)]
-pub(super) struct FieldAttribute<'a> {
+pub struct FieldAttribute<'a> {
     attribute: Function<'a>,
     prefix: Option<Cow<'a, str>>,
 }

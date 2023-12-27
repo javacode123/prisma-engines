@@ -9,7 +9,7 @@ use std::{borrow::Cow, fmt};
 /// A field in a model block.
 #[derive(Debug)]
 pub struct Field<'a> {
-    name: Constant<Cow<'a, str>>,
+    pub(crate) name: Constant<Cow<'a, str>>,
     commented_out: bool,
     r#type: FieldType<'a>,
     documentation: Option<Documentation<'a>>,
@@ -17,7 +17,7 @@ pub struct Field<'a> {
     unique: Option<UniqueFieldAttribute<'a>>,
     id: Option<IdFieldDefinition<'a>>,
     default: Option<DefaultValue<'a>>,
-    map: Option<FieldAttribute<'a>>,
+    pub(crate) map: Option<FieldAttribute<'a>>,
     relation: Option<Relation<'a>>,
     native_type: Option<FieldAttribute<'a>>,
     ignore: Option<FieldAttribute<'a>>,

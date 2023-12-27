@@ -161,7 +161,13 @@ impl<'a> Model<'a> {
     ///   ^^^^^^^^^^ this
     /// }
     /// ```
-    pub fn push_field(&mut self, field: Field<'a>) {
+    pub fn push_field(&mut self, mut field: Field<'a>) {
+        let name = field.name.to_string();
+        if self.fields.iter().any(|f| f.name.to_string() == name.to_string()) {
+            if let Some(_) = field.map {
+                field.name = Constant(Cow::Owned(format!("{}_", name)));
+            }
+        }
         self.fields.push(field);
     }
 

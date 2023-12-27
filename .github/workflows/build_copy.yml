@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         target:
-          # Linux Glibc rhel [rhel] https://github.com/steebchen/prisma-client-go/issues/1107
+          # Linux Glibc rhel [rhel]
           - name: "rhel-openssl-1.0.x"
             image: 'prismagraphql/build:rhel-libssl1.0.x'
             target_string: ''
@@ -51,7 +51,7 @@ jobs:
             target_string: ''
             target_path: ''
             features_string: ''
-          # Linux Musl musl [linux-musl]
+          # Linux Musl musl amd64 [linux-musl]
           - name: "linux-musl-openssl-1.1.x"
             image: 'prismagraphql/build:alpine-libssl1.1.x'
             target_string: ''
@@ -62,8 +62,9 @@ jobs:
             target_string: ''
             target_path: ''
             features_string: ''
+          # arm64
           - name: "linux-musl"
-            image: 'prismagraphql/build:linux-static-arm64'
+            image: 'prismagraphql/build:cross-linux-musl-arm-ssl-1.1.x'
             target_string: '--target aarch64-unknown-linux-musl'
             target_path: 'aarch64-unknown-linux-musl'
             features_string: '--features vendored-openssl'
@@ -138,6 +139,8 @@ jobs:
           IMAGE: ${{ matrix.target.image }}
           TARGET_STRING: ${{ matrix.target.target_string }}
           FEATURES_STRING: ${{ matrix.target.features_string }}
+          BIN_PATH: ${{ github.workspace }}/target/release
+          TARGET_PATH: ${{ matrix.target.target_path }}
         run: |
           command="docker run \
             -e SQLITE_MAX_VARIABLE_NUMBER=250000 \
@@ -153,12 +156,15 @@ jobs:
               && cargo clean \
               && cargo build --release -p query-engine          --manifest-path query-engine/query-engine/Cargo.toml          $TARGET_STRING $FEATURES_STRING \
               && cargo build --release -p schema-engine-cli     --manifest-path schema-engine/cli/Cargo.toml                  $TARGET_STRING $FEATURES_STRING \
+              && mkdir -p ./target/bin \
               \" \
             "
+          
           if [[ -n "$TARGET_STRING" ]]; then
             command=$(echo "$command" | sed "s|rustup default 1.67.0|rustup default 1.67.0 \&\& rustup target add $(echo $TARGET_STRING | awk '{print $NF}')|")
           fi
           echo "COMMAND=$command" >> "$GITHUB_OUTPUT"
+
       - name: Show Build Command
         env:
           COMMAND: ${{ steps.construct_build_command.outputs.COMMAND }}"
@@ -167,23 +173,59 @@ jobs:
       - name: Execute Build command
         run:  ${{ steps.construct_build_command.outputs.command }}
 
+      - name: Compress
+        env:
+          TARGET_PATH: ${{ matrix.target.target_path }}
+        run: | #TODO权限错误
+          if [[ -n "$TARGET_PATH" ]]; then
+            sudo mkdir -p ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin
+            sudo gzip ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/schema-engine -c > ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin/schema-engine.gz
+            sudo gzip ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/query-engine -c > ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin/query-engine.gz
+          else
+            sudo mkdir -p ${{ github.workspace }}/target/bin
+            sudo gzip ${{ github.workspace }}/target/release/schema-engine -c > ${{ github.workspace }}/target/bin/schema-engine.gz
+            sudo gzip ${{ github.workspace }}/target/release/query-engine -c > ${{ github.workspace }}/target/bin/query-engine.gz
+          fi
+
+      - uses: ryand56/r2-upload-action@latest
+        if: ${{ matrix.target.target_path == '' }}
+        with:
+          r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket: ${{ secrets.R2_BUCKET }}
+          source-dir: ${{ github.workspace }}/target/bin
+          destination-dir: ./${{ github.event.inputs.commit }}/${{ matrix.target.name }}/
+
+      - uses: ryand56/r2-upload-action@latest
+        if: ${{ matrix.target.target_path != '' }}
+        with:
+          r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket: ${{ secrets.R2_BUCKET }}
+          source-dir: ${{ github.workspace }}/target/bin
+          destination-dir: ./${{ github.event.inputs.commit }}/${{ matrix.target.name }}/
+
       - uses: actions/upload-artifact@v3
         if: ${{ matrix.target.target_path == '' }}
         with:
           name: ${{ matrix.target.name }}
           path: |
-            ${{ github.workspace }}/target/release/schema-engine
-            # ${{ github.workspace }}/target/release/query-engine
-            # ${{ github.workspace }}/target/release/prisma-fmt
+            ${{ github.workspace }}/target/bin/schema-engine.gz
+            ${{ github.workspace }}/target/bin/query-engine.gz
+            # ${{ github.workspace }}/target/bin/prisma-fmt
+
       - uses: actions/upload-artifact@v3
         if: ${{ matrix.target.target_path != '' }}
         with:
           name: ${{ matrix.target.name }}
           path: |
-            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/libquery_engine.dylib
-            ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/schema-engine
-            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/query-engine
-            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/prisma-fmt
+            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin/libquery_engine.dylib
+            ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin/schema-engine.gz
+            ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin/query-engine.gz
+            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin/prisma-fmt
+
   build-darwin:
     name: "${{ matrix.target.name }} (on branch ${{ github.event.ref }} for commit ${{ github.event.inputs.commit }})"
     env:
@@ -219,6 +261,7 @@ jobs:
         run: |
           rustup target add aarch64-apple-darwin
           xcodebuild -showsdks
+
       - uses: actions/cache@v3
         with:
           path: |
@@ -229,14 +272,34 @@ jobs:
 
       - run: |
           cargo build --release -p query-engine -p schema-engine-cli ${{ matrix.target.target_string }}
+
+      - name: Compress
+        run:  |
+          mkdir -p ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin
+          gzip ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/schema-engine -c > ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin/schema-engine.gz
+          gzip ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/query-engine -c > ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin/query-engine.gz
+
+      - name: R2 Upload Action
+        uses: ryand56/r2-upload-action@latest
+        with:
+          r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket: ${{ secrets.R2_BUCKET }}
+          source-dir: ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin
+          destination-dir: ./${{ github.event.inputs.commit }}/${{ matrix.target.name }}/
+
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.target.name }}
           path: |
-            ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/schema-engine
-            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/prisma-fmt
-            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/query-engine
-            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/libquery_engine.dylib
+            ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin/schema-engine.gz
+            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin/prisma-fmt
+            ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin/query-engine.gz
+            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/bin/libquery_engine.dylib
+
+
+
   build-windows:
     name: "Windows engines build on branch ${{ github.event.ref }} for commit ${{ github.event.inputs.commit }}"
     env:
@@ -264,11 +327,31 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - run: cargo build --release
+      - run: cargo build --release -p query-engine -p schema-engine-cli
+
+      - name: Compress EXE
+        run: |
+          $destPath = "${{ github.workspace }}\target\bin"
+          if(!(Test-Path -Path $destPath )){
+            New-Item -ItemType directory -Path $destPath
+          }
+          Compress-Archive -Path ${{ github.workspace }}\target\release\schema-engine.exe -DestinationPath ${{ github.workspace }}\target\bin\schema-engine.exe.gz 
+          Compress-Archive -Path ${{ github.workspace }}\target\release\query-engine.exe -DestinationPath ${{ github.workspace }}\target\bin\query-engine.exe.gz
+
+      #      - name: R2 Upload Action TODO
+      #        uses: magicwallet/r2-upload@main
+      #        with:
+      #             endpoint: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+      #             access_key_id: ${{ secrets.R2_ACCESS_KEY_ID }}
+      #             secret_access_key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      #             bucket: ${{ secrets.R2_BUCKET }}
+      #             file: ${{ github.workspace }}\target\bin\schema-engine.exe.gz
+      #             destination: ${{ github.event.inputs.commit }}
 
       - uses: actions/upload-artifact@v3
         with:
           name: windows
           path: |
-            ${{ github.workspace }}/target/release/schema-engine.exe
-            ${{ github.workspace }}/target/release/schema-engine.dll
+            ${{ github.workspace }}/target/bin/schema-engine.exe.gz
+            # ${{ github.workspace }}/target/release/schema-engine.dll
+            ${{ github.workspace }}/target/bin/query-engine.exe.gz

@@ -45,12 +45,12 @@ jobs:
             image: 'prismagraphql/build:debian-libssl1.1.x'
             target_string: ''
             target_path: ''
-            features_string: ''
+            features_string: '--features vendored-openssl'
           - name: "debian-openssl-3.0.x"
             image: 'prismagraphql/build:debian-libssl3.0.x'
             target_string: ''
             target_path: ''
-            features_string: ''
+            features_string: '--features vendored-openssl'
           # Linux Musl musl [linux-musl]
           - name: "linux-musl-openssl-1.1.x"
             image: 'prismagraphql/build:alpine-libssl1.1.x'

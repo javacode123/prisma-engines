@@ -20,92 +20,92 @@ jobs:
       matrix:
         target:
           # Linux Glibc rhel [rhel] https://github.com/steebchen/prisma-client-go/issues/1107
-          - name: "rhel-openssl-1.0.x"
-            image: 'prismagraphql/build:rhel-libssl1.0.x'
-            target_string: ''
-            target_path: ''
-            features_string: '--features vendored-openssl'
-          - name: "rhel-openssl-1.1.x"
-            image: 'prismagraphql/build:rhel-libssl1.1.x'
-            target_string: ''
-            target_path: ''
-            features_string: '--features vendored-openssl'
-          - name: "rhel-openssl-3.0.x"
-            image: 'prismagraphql/build:rhel-libssl3.0.x'
-            target_string: ''
-            target_path: ''
-            features_string: '--features vendored-openssl'
+          # - name: "rhel-openssl-1.0.x"
+          #   image: 'prismagraphql/build:rhel-libssl1.0.x'
+          #   target_string: ''
+          #   target_path: ''
+          #   features_string: '--features vendored-openssl'
+          # - name: "rhel-openssl-1.1.x"
+          #   image: 'prismagraphql/build:rhel-libssl1.1.x'
+          #   target_string: ''
+          #   target_path: ''
+          #   features_string: '--features vendored-openssl'
+          # - name: "rhel-openssl-3.0.x"
+          #   image: 'prismagraphql/build:rhel-libssl3.0.x'
+          #   target_string: ''
+          #   target_path: ''
+          #   features_string: '--features vendored-openssl'
           # Linux Glibc debian [debian]
-          - name: "debian-openssl-1.0.x"
-            image: 'prismagraphql/build:debian-libssl1.0.x'
-            target_string: ''
-            target_path: ''
-            features_string: '--features vendored-openssl'
-          - name: "debian-openssl-1.1.x"
-            image: 'prismagraphql/build:debian-libssl1.1.x'
-            target_string: ''
-            target_path: ''
-            features_string: '--features vendored-openssl'
-          - name: "debian-openssl-3.0.x"
-            image: 'prismagraphql/build:debian-libssl3.0.x'
-            target_string: ''
-            target_path: ''
-            features_string: '--features vendored-openssl'
-          # Linux Musl musl [linux-musl]
-          - name: "linux-musl-openssl-1.1.x"
-            image: 'prismagraphql/build:alpine-libssl1.1.x'
-            target_string: ''
-            target_path: ''
-            features_string: '--features vendored-openssl'
-          - name: "linux-musl-openssl-3.0.x"
-            image: 'prismagraphql/build:alpine-libssl3.0.x'
-            target_string: ''
-            target_path: ''
-            features_string: '--features vendored-openssl'
-          - name: "linux-musl"
+          # - name: "debian-openssl-1.0.x"
+          #   image: 'prismagraphql/build:debian-libssl1.0.x'
+          #   target_string: ''
+          #   target_path: ''
+          #   features_string: '--features vendored-openssl'
+          # - name: "debian-openssl-1.1.x"
+          #   image: 'prismagraphql/build:debian-libssl1.1.x'
+          #   target_string: ''
+          #   target_path: ''
+          #   features_string: '--features vendored-openssl'
+          # - name: "debian-openssl-3.0.x"
+          #   image: 'prismagraphql/build:debian-libssl3.0.x'
+          #   target_string: ''
+          #   target_path: ''
+          #   features_string: '--features vendored-openssl'
+          # # Linux Musl musl [linux-musl]
+          # - name: "linux-musl-openssl-1.1.x"
+          #   image: 'prismagraphql/build:alpine-libssl1.1.x'
+          #   target_string: ''
+          #   target_path: ''
+          #   features_string: '--features vendored-openssl'
+          # - name: "linux-musl-openssl-3.0.x"
+          #   image: 'prismagraphql/build:alpine-libssl3.0.x'
+          #   target_string: ''
+          #   target_path: ''
+          #   features_string: '--features vendored-openssl'
+          - name: "linux-arm64"
             image: 'prismagraphql/build:linux-static-arm64'
             target_string: '--target aarch64-unknown-linux-musl'
             target_path: 'aarch64-unknown-linux-musl'
             features_string: '--features vendored-openssl'
           # Linux Static [linux-static]
-          - name: "linux-static-x64"
+          - name: "linux-amd64"
             image: 'prismagraphql/build:linux-static-x64'
             target_string: '--target x86_64-unknown-linux-musl'
             target_path: 'x86_64-unknown-linux-musl'
             features_string: '--features vendored-openssl'
           # Linux Arm64 Glibc [linux-arm64]
-          - name: "linux-arm64-openssl-1.0.x"
-            image: 'prismagraphql/build:cross-linux-arm-ssl-1.0.x'
-            target_string: '--target aarch64-unknown-linux-gnu'
-            target_path: 'aarch64-unknown-linux-gnu'
-            features_string: '--features vendored-openssl'
-          - name: "linux-arm64-openssl-1.1.x"
-            image: 'prismagraphql/build:cross-linux-arm-ssl-1.1.x'
-            target_string: '--target aarch64-unknown-linux-gnu'
-            target_path: 'aarch64-unknown-linux-gnu'
-            features_string: '--features vendored-openssl'
-          - name: "linux-arm64-openssl-3.0.x"
-            image: 'prismagraphql/build:cross-linux-arm-ssl-3.0.x'
-            target_string: '--target aarch64-unknown-linux-gnu'
-            target_path: 'aarch64-unknown-linux-gnu'
-            features_string: '--features vendored-openssl'
+          # - name: "linux-arm64-openssl-1.0.x"
+          #   image: 'prismagraphql/build:cross-linux-arm-ssl-1.0.x'
+          #   target_string: '--target aarch64-unknown-linux-gnu'
+          #   target_path: 'aarch64-unknown-linux-gnu'
+          #   features_string: '--features vendored-openssl'
+          # - name: "linux-arm64-openssl-1.1.x"
+          #   image: 'prismagraphql/build:cross-linux-arm-ssl-1.1.x'
+          #   target_string: '--target aarch64-unknown-linux-gnu'
+          #   target_path: 'aarch64-unknown-linux-gnu'
+          #   features_string: '--features vendored-openssl'
+          # - name: "linux-arm64-openssl-3.0.x"
+          #   image: 'prismagraphql/build:cross-linux-arm-ssl-3.0.x'
+          #   target_string: '--target aarch64-unknown-linux-gnu'
+          #   target_path: 'aarch64-unknown-linux-gnu'
+          #   features_string: '--features vendored-openssl'
           # Linux Arm64 Musl [linux-musl-arm64]
-          - name: "linux-musl-arm64-openssl-1.1.x"
-            image: 'prismagraphql/build:cross-linux-musl-arm-ssl-1.1.x'
-            target_string: '--target aarch64-unknown-linux-musl'
-            target_path: 'aarch64-unknown-linux-musl'
-            features_string: '--features vendored-openssl'
-          - name: "linux-musl-arm64-openssl-3.0.x"
-            image: 'prismagraphql/build:cross-linux-musl-arm-ssl-3.0.x'
-            target_string: '--target aarch64-unknown-linux-musl'
-            target_path: 'aarch64-unknown-linux-musl'
-            features_string: '--features vendored-openssl'
+          # - name: "linux-musl-arm64-openssl-1.1.x"
+          #   image: 'prismagraphql/build:cross-linux-musl-arm-ssl-1.1.x'
+          #   target_string: '--target aarch64-unknown-linux-musl'
+          #   target_path: 'aarch64-unknown-linux-musl'
+          #   features_string: '--features vendored-openssl'
+          # - name: "linux-musl-arm64-openssl-3.0.x"
+          #   image: 'prismagraphql/build:cross-linux-musl-arm-ssl-3.0.x'
+          #   target_string: '--target aarch64-unknown-linux-musl'
+          #   target_path: 'aarch64-unknown-linux-musl'
+          #   features_string: '--features vendored-openssl'
           # Linux Arm64 Static [linux-static-arm64]
-          - name: "linux-static-arm64"
-            image: 'prismagraphql/build:linux-static-arm64'
-            target_string: '--target aarch64-unknown-linux-musl'
-            target_path: 'aarch64-unknown-linux-musl'
-            features_string: '--features vendored-openssl'
+          # - name: "linux-static-arm64"
+          #   image: 'prismagraphql/build:linux-static-arm64'
+          #   target_string: '--target aarch64-unknown-linux-musl'
+          #   target_path: 'aarch64-unknown-linux-musl'
+          #   features_string: '--features vendored-openssl'
     steps:
       - name: Output link to real commit
         if: ${{ github.event.inputs.commit }}
@@ -196,7 +196,7 @@ jobs:
     strategy:
       matrix:
         target:
-          - name: "darwin"
+          - name: "darwin-amd64"
             target_string: ''
             target_path: ''
           - name: "darwin-arm64"

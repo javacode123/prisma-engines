@@ -14,12 +14,12 @@ import (
 
 const (
 	// runnerid, https://github.com/javacode123/prisma-engines/actions/runs/{runnerId}}
-	runnerID = 6938101344
+	runnerID = *
 	// 在 github 上设置 person access tokens > Tokens: https://github.com/settings/tokens
-	token     = "****"
+	token     = "*"
 	owner     = "javacode123"
 	project   = "prisma-engines"
-	commit    = "4ce8f0e167b8453fe080782170f44d83b17ce11f"
+	commit    = "*"
 	artifacts = "https://api.github.com/repos/%s/%s/actions/artifacts"
 )
 
@@ -141,8 +141,7 @@ func unzipFile(source string) {
 		}
 		defer fileReader.Close()
 
-		extractedFilePath := filepath.Join(source[:strings.LastIndex(source, ".")], file.Name)
-
+		extractedFilePath := fmt.Sprintf("%s-%s", source[:strings.LastIndex(source, ".")], file.Name)
 		if file.FileInfo().IsDir() {
 			os.MkdirAll(extractedFilePath, os.ModePerm)
 		} else {

@@ -19,92 +19,15 @@ jobs:
       fail-fast: false
       matrix:
         target:
-          # Linux Glibc rhel [rhel] https://github.com/steebchen/prisma-client-go/issues/1107
-          - name: "rhel-openssl-1.0.x"
-            image: 'prismagraphql/build:rhel-libssl1.0.x'
-            target_string: ''
-            target_path: ''
-            features_string: '--features vendored-openssl'
-          - name: "rhel-openssl-1.1.x"
-            image: 'prismagraphql/build:rhel-libssl1.1.x'
-            target_string: ''
-            target_path: ''
-            features_string: '--features vendored-openssl'
-          - name: "rhel-openssl-3.0.x"
-            image: 'prismagraphql/build:rhel-libssl3.0.x'
-            target_string: ''
-            target_path: ''
-            features_string: '--features vendored-openssl'
-          # Linux Glibc debian [debian]
-          - name: "debian-openssl-1.0.x"
-            image: 'prismagraphql/build:debian-libssl1.0.x'
-            target_string: ''
-            target_path: ''
-            features_string: '--features vendored-openssl'
-          - name: "debian-openssl-1.1.x"
-            image: 'prismagraphql/build:debian-libssl1.1.x'
-            target_string: ''
-            target_path: ''
-            features_string: '--features vendored-openssl'
-          - name: "debian-openssl-3.0.x"
-            image: 'prismagraphql/build:debian-libssl3.0.x'
-            target_string: ''
-            target_path: ''
-            features_string: '--features vendored-openssl'
-          # Linux Musl musl [linux-musl]
-          - name: "linux-musl-openssl-1.1.x"
-            image: 'prismagraphql/build:alpine-libssl1.1.x'
-            target_string: ''
-            target_path: ''
-            features_string: '--features vendored-openssl'
-          - name: "linux-musl-openssl-3.0.x"
-            image: 'prismagraphql/build:alpine-libssl3.0.x'
-            target_string: ''
-            target_path: ''
-            features_string: '--features vendored-openssl'
-          - name: "linux-musl"
+          - name: "linux-arm64"
             image: 'prismagraphql/build:linux-static-arm64'
             target_string: '--target aarch64-unknown-linux-musl'
             target_path: 'aarch64-unknown-linux-musl'
             features_string: '--features vendored-openssl'
-          # Linux Static [linux-static]
-          - name: "linux-static-x64"
+          - name: "linux-amd64"
             image: 'prismagraphql/build:linux-static-x64'
             target_string: '--target x86_64-unknown-linux-musl'
             target_path: 'x86_64-unknown-linux-musl'
-            features_string: '--features vendored-openssl'
-          # Linux Arm64 Glibc [linux-arm64]
-          - name: "linux-arm64-openssl-1.0.x"
-            image: 'prismagraphql/build:cross-linux-arm-ssl-1.0.x'
-            target_string: '--target aarch64-unknown-linux-gnu'
-            target_path: 'aarch64-unknown-linux-gnu'
-            features_string: '--features vendored-openssl'
-          - name: "linux-arm64-openssl-1.1.x"
-            image: 'prismagraphql/build:cross-linux-arm-ssl-1.1.x'
-            target_string: '--target aarch64-unknown-linux-gnu'
-            target_path: 'aarch64-unknown-linux-gnu'
-            features_string: '--features vendored-openssl'
-          - name: "linux-arm64-openssl-3.0.x"
-            image: 'prismagraphql/build:cross-linux-arm-ssl-3.0.x'
-            target_string: '--target aarch64-unknown-linux-gnu'
-            target_path: 'aarch64-unknown-linux-gnu'
-            features_string: '--features vendored-openssl'
-          # Linux Arm64 Musl [linux-musl-arm64]
-          - name: "linux-musl-arm64-openssl-1.1.x"
-            image: 'prismagraphql/build:cross-linux-musl-arm-ssl-1.1.x'
-            target_string: '--target aarch64-unknown-linux-musl'
-            target_path: 'aarch64-unknown-linux-musl'
-            features_string: '--features vendored-openssl'
-          - name: "linux-musl-arm64-openssl-3.0.x"
-            image: 'prismagraphql/build:cross-linux-musl-arm-ssl-3.0.x'
-            target_string: '--target aarch64-unknown-linux-musl'
-            target_path: 'aarch64-unknown-linux-musl'
-            features_string: '--features vendored-openssl'
-          # Linux Arm64 Static [linux-static-arm64]
-          - name: "linux-static-arm64"
-            image: 'prismagraphql/build:linux-static-arm64'
-            target_string: '--target aarch64-unknown-linux-musl'
-            target_path: 'aarch64-unknown-linux-musl'
             features_string: '--features vendored-openssl'
     steps:
       - name: Output link to real commit
@@ -168,21 +91,12 @@ jobs:
         run:  ${{ steps.construct_build_command.outputs.command }}
 
       - uses: actions/upload-artifact@v3
-        if: ${{ matrix.target.target_path == '' }}
-        with:
-          name: ${{ matrix.target.name }}
-          path: |
-            ${{ github.workspace }}/target/release/schema-engine
-            # ${{ github.workspace }}/target/release/query-engine
-            # ${{ github.workspace }}/target/release/prisma-fmt
-      - uses: actions/upload-artifact@v3
-        if: ${{ matrix.target.target_path != '' }}
         with:
           name: ${{ matrix.target.name }}
           path: |
             # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/libquery_engine.dylib
             ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/schema-engine
-            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/query-engine
+            ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/query-engine
             # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/prisma-fmt
   build-darwin:
     name: "${{ matrix.target.name }} (on branch ${{ github.event.ref }} for commit ${{ github.event.inputs.commit }})"
@@ -196,9 +110,9 @@ jobs:
     strategy:
       matrix:
         target:
-          - name: "darwin"
-            target_string: ''
-            target_path: ''
+          - name: "darwin-amd64"
+            target_string: '--target x86_64-apple-darwin'
+            target_path: 'x86_64-apple-darwin'
           - name: "darwin-arm64"
             target_string: '--target aarch64-apple-darwin'
             target_path: 'aarch64-apple-darwin'
@@ -214,11 +128,11 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
-      - name: Install aarch64 toolchain
-        if: ${{ matrix.target.name == 'darwin-arm64' }}
+      - name: Install toolchain
         run: |
-          rustup target add aarch64-apple-darwin
+          rustup target add ${{ matrix.target.target_path }}
           xcodebuild -showsdks
+
       - uses: actions/cache@v3
         with:
           path: |
@@ -235,15 +149,26 @@ jobs:
           path: |
             ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/schema-engine
             # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/prisma-fmt
-            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/query-engine
+            ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/query-engine
             # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/libquery_engine.dylib
+
   build-windows:
-    name: "Windows engines build on branch ${{ github.event.ref }} for commit ${{ github.event.inputs.commit }}"
+    name: "${{ matrix.target.name }} (on branch ${{ github.event.ref }} for commit ${{ github.event.inputs.commit }})"
     env:
       SQLITE_MAX_VARIABLE_NUMBER: 250000
       SQLITE_MAX_EXPR_DEPTH: 10000
       RUSTFLAGS: "-C target-feature=+crt-static"
     runs-on: windows-latest
+
+    strategy:
+      matrix:
+        target:
+          - name: "windows-amd64"
+            target_string: '--target x86_64-pc-windows-msvc'
+            target_path: 'x86_64-pc-windows-msvc'
+#          - name: "windows-arm64"
+#            target_string: '--target aarch64-pc-windows-msvc'
+#            target_path: 'aarch64-pc-windows-msvc'
 
     steps:
       - name: Output link to real commit
@@ -256,6 +181,10 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
+      - name: Install toolchain
+        run: |
+          rustup target add ${{ matrix.target.target_path }}
+
       - uses: actions/cache@v3
         with:
           path: |
@@ -264,11 +193,12 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - run: cargo build --release
+      - run: cargo build --release -p query-engine -p schema-engine-cli ${{ matrix.target.target_string }}
 
       - uses: actions/upload-artifact@v3
         with:
-          name: windows
+          name: ${{ matrix.target.name }}
           path: |
-            ${{ github.workspace }}/target/release/schema-engine.exe
-            ${{ github.workspace }}/target/release/schema-engine.dll
+            ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/schema-engine.exe
+            ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/query-engine.exe
+            # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/schema-engine.dll

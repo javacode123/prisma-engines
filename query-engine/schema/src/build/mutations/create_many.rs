@@ -1,7 +1,7 @@
 use super::*;
 use crate::{Identifier, IdentifierType, InputField, InputType, OutputField, OutputType, QueryInfo, QueryTag};
 use constants::*;
-use input_types::{fields::data_input_mapper::*, list_union_type};
+use input_types::fields::data_input_mapper::*;
 use output_types::objects;
 use prisma_models::{Model, RelationFieldRef};
 use psl::datamodel_connector::ConnectorCapability;
@@ -26,7 +26,8 @@ pub(crate) fn create_many(ctx: &'_ QuerySchema, model: Model) -> OutputField<'_>
 /// Builds "skip_duplicates" and "data" arguments intended for the create many field.
 pub(crate) fn create_many_arguments(ctx: &'_ QuerySchema, model: Model) -> Vec<InputField<'_>> {
     let create_many_type = InputType::object(create_many_object_type(ctx, model, None));
-    let data_arg = input_field(args::DATA, list_union_type(create_many_type, true), None, None);
+
+    let data_arg = input_field(args::DATA, vec![InputType::list(create_many_type)], None, None); // 旧逻辑是取第一个 list_union_type(create_many_type, true)
 
     if ctx.has_capability(ConnectorCapability::CreateSkipDuplicates) {
         let skip_arg = input_field(args::SKIP_DUPLICATES, vec![InputType::boolean()], None, None).optional();

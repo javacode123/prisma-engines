@@ -6,7 +6,7 @@ pub(crate) trait WithFieldRefInputExt<'a> {
 
 impl<'a> WithFieldRefInputExt<'a> for InputType<'a> {
     fn with_field_ref_input(self) -> Vec<InputType<'a>> {
-        let field_types = vec![self.clone()]; // remove ref
+        let field_types = vec![self.clone()]; // zjl remove ref
 
         field_types
     }

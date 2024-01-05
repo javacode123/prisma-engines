@@ -1,10 +1,22 @@
 datasource db {
   provider = "mysql"
-  url      = "mysql://root:123456,zjl@localhost:3306/yxy"
+  url      = "mysql://root:*@localhost:3306/yxy"
 }
 
-model shechem_common_sms_log {
-  id   Int @id @default(autoincrement())
-  uid  Int @default(0) @map("_uid")
-  uid_ Int @default(0)
+model account {
+  id   Int    @id
+  i2   Int?
+  user Int?   @map("_user")
+  post post[]
+}
+
+model post {
+  id         Int       @id @default(autoincrement())
+  account_id Int
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  updated_at DateTime? @default(now()) @db.Timestamp(0)
+  deleted_at DateTime? @db.Timestamp(0)
+  account    account   @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_account_id")
+
+  @@index([account_id], map: "fk_account_id")
 }

@@ -382,7 +382,7 @@ model User {
         let intro_res = test_introspect(
             &r##"datasource db {
               provider = "mysql"
-                url      = "mysql://root:123456,zjl@localhost:3306/yxy"
+                url      = "mysql://root:*@localhost:3306/yxy"
         
                }"##
             .to_string(),

@@ -64,7 +64,7 @@ fn nested_create_many_envelope(ctx: &'_ QuerySchema, parent_field: RelationField
     let mut input_object = init_input_object_type(ident);
     input_object.set_fields(move || {
         let create_many_type = InputType::object(create_type.clone());
-        let data_arg = input_field(args::DATA, list_union_type(create_many_type, true), None, None);
+        let data_arg = input_field(args::DATA, vec![InputType::list(create_many_type)], None, None); // 移除 list_union_type(create_many_type, true)
 
         if ctx.has_capability(ConnectorCapability::CreateSkipDuplicates) {
             let skip_arg = input_field(args::SKIP_DUPLICATES, vec![InputType::boolean()], None, None).optional();
@@ -138,7 +138,7 @@ pub(crate) fn nested_update_many_field(ctx: &'_ QuerySchema, parent_field: Relat
         Some(
             input_field(
                 operations::UPDATE_MANY,
-                list_union_object_type(input_type, true), //vec![input_type.clone(), InputType::list(input_type)],
+                vec![InputType::list(InputType::object(input_type))], // 移除 list_union_object_type(input_type, true)
                 None,
                 None,
             )

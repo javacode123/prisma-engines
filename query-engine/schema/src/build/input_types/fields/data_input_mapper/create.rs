@@ -27,7 +27,7 @@ impl DataInputFieldMapper for CreateDataInputFieldMapper {
 
                 input_field(
                     sf.name().to_owned(),
-                    vec![enum_type, typ],
+                    vec![typ, enum_type], // reverser 了
                     sf.default_value(),
                     sf.borrow_comment(&ctx.internal_data_model.schema),
                 )

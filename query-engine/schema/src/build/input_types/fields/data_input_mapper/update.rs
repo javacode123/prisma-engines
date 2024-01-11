@@ -54,7 +54,7 @@ impl DataInputFieldMapper for UpdateDataInputFieldMapper {
                 let enum_type = InputType::enum_type(json_null_input_enum(!sf.is_required()));
                 let input_field = input_field(
                     sf.name().to_owned(),
-                    vec![enum_type, base_update_type],
+                    vec![base_update_type, enum_type], // reverser 了
                     None,
                     sf.borrow_comment(&ctx.internal_data_model.schema),
                 );

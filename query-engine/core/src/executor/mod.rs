@@ -72,7 +72,8 @@ pub struct TransactionOptions {
 
     /// An optional pre-defined transaction id. Some value might be provided in case we want to generate
     /// a new id at the beginning of the transaction
-    #[serde(skip)]
+    // #[serde(skip)]
+    #[serde(rename = "tx_id")] //业务指定
     pub new_tx_id: Option<TxId>,
 }
 
@@ -89,7 +90,10 @@ impl TransactionOptions {
     /// Generates a new transaction id before the transaction is started and returns a modified version
     /// of self with the new predefined_id set.
     pub fn with_new_transaction_id(&mut self) -> TxId {
-        let tx_id: TxId = Default::default();
+        let tx_id: TxId = match self.new_tx_id.clone() {
+            None => Default::default(),
+            Some(tx_id) => tx_id,
+        };
         self.new_tx_id = Some(tx_id.clone());
         tx_id
     }

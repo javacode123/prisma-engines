@@ -404,7 +404,10 @@ fn push_column_for_model_enum_scalar_field(
             column_arity(field.ast_field().arity),
         ),
         auto_increment: false,
-        description: None,
+        description: match field.ast_field().comment() {
+            None => None,
+            Some(comment) => Some(String::from(comment)),
+        },
     };
 
     ctx.schema.describer_schema.push_table_column(table_id, column);

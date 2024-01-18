@@ -509,7 +509,7 @@ fn traceparent(headers: &HeaderMap) -> Option<String> {
 }
 
 fn transaction_id(headers: &HeaderMap) -> Option<TxId> {
-    const TRANSACTION_ID_HEADER: &str = "X-transaction-id";
+    const TRANSACTION_ID_HEADER: &str = "X-Transaction-Id";
     headers
         .get(TRANSACTION_ID_HEADER)
         .and_then(|h| h.to_str().ok())

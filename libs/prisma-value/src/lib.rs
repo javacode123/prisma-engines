@@ -58,7 +58,22 @@ pub fn stringify_datetime(datetime: &DateTime<FixedOffset>) -> String {
 /// Parses an RFC 3339 and ISO 8601 date and time string such as 1996-12-19T16:39:57-08:00,
 /// then returns a new DateTime with a parsed FixedOffset.
 pub fn parse_datetime(datetime: &str) -> chrono::ParseResult<DateTime<FixedOffset>> {
-    DateTime::parse_from_rfc3339(datetime)
+    let mut datetime = String::from(datetime);
+    if datetime.len() == 10 {
+        // 由于当前库不支持解析 ISO-860, 特殊处理 2024-02-02 的 case
+        datetime = format!("{}T00:00:00+00:00", datetime);
+    }
+    DateTime::parse_from_rfc3339(datetime.as_str())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::parse_datetime;
+
+    #[test]
+    fn test_parse_datetime() {
+        parse_datetime("2024-02-02").expect("not success");
+    }
 }
 
 pub fn encode_bytes(bytes: &[u8]) -> String {

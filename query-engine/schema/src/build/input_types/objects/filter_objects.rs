@@ -150,7 +150,7 @@ pub(crate) fn where_unique_object_type(ctx: &'_ QuerySchema, model: Model) -> In
                 let name = sf.borrowed_name(&ctx.internal_data_model.schema);
                 let typ = map_scalar_input_type_for_field(ctx, sf);
                 let comment = f.borrowed_comment(&ctx.internal_data_model.schema);
-                simple_input_field(name, typ, None, comment).optional()
+                simple_input_field(name, typ, None, comment)
             })
             .collect();
 

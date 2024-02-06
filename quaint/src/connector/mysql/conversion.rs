@@ -4,80 +4,131 @@ use crate::{
     error::{Error, ErrorKind},
 };
 use chrono::{DateTime, Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike, Utc};
+use mysql_async::prelude::ToValue;
 use mysql_async::{
     self as my,
     consts::{ColumnFlags, ColumnType},
 };
 use std::convert::TryFrom;
 
-pub fn conv_params(params: &[Value<'_>]) -> crate::Result<my::Params> {
+// 在 mysql 的 in 查询中，需要手动处理占位符，保证参数一致
+// 例如 sql: select * from t_name where id in ?; parameters: [[1,2,3]]
+// 需要将 in 后面的占位符替换为 (?,?,?), 因此需要返回一个 Vec<usize> 标识数组的参数长度
+pub fn conv_params(params: &[Value<'_>]) -> (crate::Result<my::Params>, Vec<usize>) {
+    let mut arr_size: Vec<usize> = vec![];
     if params.is_empty() {
         // If we don't use explicit 'Empty',
         // mysql crashes with 'internal error: entered unreachable code'
-        Ok(my::Params::Empty)
+        return (Ok(my::Params::Empty), arr_size);
     } else {
         let mut values = Vec::with_capacity(params.len());
 
         for pv in params {
-            let res = match &pv.typed {
-                ValueType::Int32(i) => i.map(|i| my::Value::Int(i as i64)),
-                ValueType::Int64(i) => i.map(my::Value::Int),
-                ValueType::Float(f) => f.map(my::Value::Float),
-                ValueType::Double(f) => f.map(my::Value::Double),
-                ValueType::Text(s) => s.clone().map(|s| my::Value::Bytes((*s).as_bytes().to_vec())),
-                ValueType::Bytes(bytes) => bytes.clone().map(|bytes| my::Value::Bytes(bytes.into_owned())),
-                ValueType::Enum(s, _) => s.clone().map(|s| my::Value::Bytes((*s).as_bytes().to_vec())),
-                ValueType::Boolean(b) => b.map(|b| my::Value::Int(b as i64)),
-                ValueType::Char(c) => c.map(|c| my::Value::Bytes(vec![c as u8])),
-                ValueType::Xml(s) => s.as_ref().map(|s| my::Value::Bytes((s).as_bytes().to_vec())),
-                ValueType::Array(_) | ValueType::EnumArray(_, _) => {
-                    let msg = "Arrays are not supported in MySQL.";
-                    let kind = ErrorKind::conversion(msg);
-
-                    let mut builder = Error::builder(kind);
-                    builder.set_original_message(msg);
-
-                    return Err(builder.build());
-                }
-
-                ValueType::Numeric(f) => f.as_ref().map(|f| my::Value::Bytes(f.to_string().as_bytes().to_vec())),
-                ValueType::Json(s) => match s {
-                    Some(ref s) => {
-                        let json = serde_json::to_string(s)?;
-                        let bytes = json.into_bytes();
-
-                        Some(my::Value::Bytes(bytes))
-                    }
-                    None => None,
-                },
-                ValueType::Uuid(u) => u.map(|u| my::Value::Bytes(u.hyphenated().to_string().into_bytes())),
-                ValueType::Date(d) => {
-                    d.map(|d| my::Value::Date(d.year() as u16, d.month() as u8, d.day() as u8, 0, 0, 0, 0))
-                }
-                ValueType::Time(t) => {
-                    t.map(|t| my::Value::Time(false, 0, t.hour() as u8, t.minute() as u8, t.second() as u8, 0))
-                }
-                ValueType::DateTime(dt) => dt.map(|dt| {
-                    my::Value::Date(
-                        dt.year() as u16,
-                        dt.month() as u8,
-                        dt.day() as u8,
-                        dt.hour() as u8,
-                        dt.minute() as u8,
-                        dt.second() as u8,
-                        dt.timestamp_subsec_micros(),
-                    )
-                }),
-            };
-
+            let (res, len) = parse_value(pv);
+            if len > 0 {
+                arr_size.push(len);
+            }
             match res {
-                Some(val) => values.push(val),
-                None => values.push(my::Value::NULL),
+                Err(e) => return (Err(e), arr_size),
+                Ok(vs) => {
+                    for v in vs {
+                        values.push(v)
+                    }
+                }
             }
         }
-
-        Ok(my::Params::Positional(values))
+        (Ok(my::Params::Positional(values)), arr_size)
     }
+}
+// 将请求输入的 value 转为 Vec<mysql::Value>, 以便转换 sql 语句。需要额外处理的的是 list。例如：
+// 输入 value 为 [1,2,3]; 输出 mysql::value: [1,2,3], 数组的长度：3，用于处理 sql 中的占位符
+fn parse_value(value: &Value) -> (crate::Result<Vec<my::Value>>, usize) {
+    // arr 类型
+    return if let ValueType::Array(arr) = &value.typed {
+        if let Some(arr_value) = arr {
+            let len = arr_value.len();
+            let mut values: Vec<my::Value> = Vec::with_capacity(len);
+            for value in arr_value {
+                let (res, _) = parse_value(value);
+                match res {
+                    Ok(vs) => {
+                        // 数组里面的子元素不能再是数组
+                        if vs.len() != 1 {
+                            let msg = "Arrays can not contain arr in MySQL.";
+                            let kind = ErrorKind::conversion(msg);
+                            let mut builder = Error::builder(kind);
+                            builder.set_original_message(msg);
+                            return (Err(builder.build()), 0);
+                        }
+                        values.push(vs.get(0).to_value())
+                    }
+                    Err(_) => return (res, 0),
+                }
+            }
+            (Ok(values), len)
+        } else {
+            (Ok(vec![my::Value::NULL]), 0)
+        }
+    } else {
+        let mysql_value = match &value.typed {
+            ValueType::Int32(i) => i.map(|i| my::Value::Int(i as i64)),
+            ValueType::Int64(i) => i.map(my::Value::Int),
+            ValueType::Float(f) => f.map(my::Value::Float),
+            ValueType::Double(f) => f.map(my::Value::Double),
+            ValueType::Text(s) => s.clone().map(|s| my::Value::Bytes((*s).as_bytes().to_vec())),
+            ValueType::Bytes(bytes) => bytes.clone().map(|bytes| my::Value::Bytes(bytes.into_owned())),
+            ValueType::Enum(s, _) => s.clone().map(|s| my::Value::Bytes((*s).as_bytes().to_vec())),
+            ValueType::Boolean(b) => b.map(|b| my::Value::Int(b as i64)),
+            ValueType::Char(c) => c.map(|c| my::Value::Bytes(vec![c as u8])),
+            ValueType::Xml(s) => s.as_ref().map(|s| my::Value::Bytes((s).as_bytes().to_vec())),
+            ValueType::EnumArray(_, _) | ValueType::Array(_) => {
+                let msg = "Arrays are not supported in MySQL.";
+                let kind = ErrorKind::conversion(msg);
+                let mut builder = Error::builder(kind);
+                builder.set_original_message(msg);
+                return (Err(builder.build()), 0);
+            }
+            ValueType::Numeric(f) => f.as_ref().map(|f| my::Value::Bytes(f.to_string().as_bytes().to_vec())),
+            ValueType::Json(s) => match s {
+                Some(ref s) => match serde_json::to_string(s) {
+                    Ok(json) => {
+                        let bytes = json.into_bytes();
+                        Some(my::Value::Bytes(bytes))
+                    }
+                    Err(_) => {
+                        let msg = "parse json err";
+                        let kind = ErrorKind::conversion(msg);
+                        let mut builder = Error::builder(kind);
+                        builder.set_original_message(msg);
+                        return (Err(builder.build()), 0);
+                    }
+                },
+                None => None,
+            },
+            ValueType::Uuid(u) => u.map(|u| my::Value::Bytes(u.hyphenated().to_string().into_bytes())),
+            ValueType::Date(d) => {
+                d.map(|d| my::Value::Date(d.year() as u16, d.month() as u8, d.day() as u8, 0, 0, 0, 0))
+            }
+            ValueType::Time(t) => {
+                t.map(|t| my::Value::Time(false, 0, t.hour() as u8, t.minute() as u8, t.second() as u8, 0))
+            }
+            ValueType::DateTime(dt) => dt.map(|dt| {
+                my::Value::Date(
+                    dt.year() as u16,
+                    dt.month() as u8,
+                    dt.day() as u8,
+                    dt.hour() as u8,
+                    dt.minute() as u8,
+                    dt.second() as u8,
+                    dt.timestamp_subsec_micros(),
+                )
+            }),
+        };
+        match mysql_value {
+            Some(val) => (Ok(vec![val]), 0),
+            None => (Ok(vec![my::Value::NULL]), 0),
+        }
+    };
 }
 
 impl TypeIdentifier for my::Column {

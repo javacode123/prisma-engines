@@ -482,10 +482,14 @@ impl Queryable for Mysql {
     }
 
     async fn query_raw(&self, sql: &str, params: &[Value<'_>]) -> crate::Result<ResultSet> {
+        let (sql_params, arr_size) = conversion::conv_params(params);
+        let sql_params = &sql_params?;
+        let sql = parse_str(sql, arr_size)?;
+        let sql = sql.as_str();
         metrics::query("mysql.query_raw", sql, params, move || async move {
             self.prepared(sql, |stmt| async move {
                 let mut conn = self.conn.lock().await;
-                let rows: Vec<my::Row> = conn.exec(&stmt, conversion::conv_params(params)?).await?;
+                let rows: Vec<my::Row> = conn.exec(&stmt, sql_params).await?;
                 let columns = stmt.columns().iter().map(|s| s.name_str().into_owned()).collect();
 
                 let last_id = conn.last_insert_id();
@@ -516,10 +520,14 @@ impl Queryable for Mysql {
     }
 
     async fn execute_raw(&self, sql: &str, params: &[Value<'_>]) -> crate::Result<u64> {
+        let (sql_params, arr_size) = conversion::conv_params(params);
+        let sql_params = &sql_params?;
+        let sql = parse_str(sql, arr_size)?;
+        let sql = sql.as_str();
         metrics::query("mysql.execute_raw", sql, params, move || async move {
             self.prepared(sql, |stmt| async move {
                 let mut conn = self.conn.lock().await;
-                conn.exec_drop(stmt, conversion::conv_params(params)?).await?;
+                conn.exec_drop(stmt, sql_params).await?;
 
                 Ok(conn.affected_rows())
             })
@@ -583,6 +591,26 @@ impl Queryable for Mysql {
     fn requires_isolation_first(&self) -> bool {
         true
     }
+}
+
+fn parse_str(input: &str, params: Vec<usize>) -> crate::Result<String> {
+    let parts: Vec<&str> = input.split("in ?").collect();
+    let mut result = String::new();
+    for (i, part) in parts.iter().enumerate() {
+        result.push_str(part);
+        if i < params.len() {
+            let placeholders = std::iter::repeat("?").take(params[i]).collect::<Vec<_>>().join(",");
+            result.push_str(&format!("in ({})", placeholders));
+        } else if i < parts.len() - 1 {
+            // 如果没有更多的 params
+            let msg = "input arr is not enough";
+            let kind = ErrorKind::conversion(msg);
+            let mut builder = Error::builder(kind);
+            builder.set_original_message(msg);
+            return Err(builder.build());
+        }
+    }
+    Ok(result)
 }
 
 #[cfg(test)]

@@ -205,7 +205,7 @@ mod create {
     // TODO(dom): Not working on mongo
     // TODO(dom): 'Expected result to return an error, but found success: {"data":{"createOneScalarModel":{"optUnique":"test"}}}'
     // Comment(dom): Expected, we're not enforcing uniqueness for the test setup yet.
-    #[connector_test(exclude(MongoDb))]
+    #[connector_test(exclude(MongoDb, Vitess("planetscale.js")))]
     async fn gracefully_fails_when_uniq_violation(runner: Runner) -> TestResult<()> {
         run_query!(
             &runner,
@@ -422,5 +422,70 @@ mod mapped_create {
         );
 
         Ok(())
+    }
+}
+
+#[test_suite(capabilities(GeoJsonGeometry))]
+mod geometry_create {
+    use query_engine_tests::run_query;
+
+    async fn create_geometry_test(runner: Runner) -> TestResult<()> {
+        // TODO@geometry: ideally, make geojson generation consistent with SQL connectors
+        match_connector_result!(
+          &runner,
+          r#"mutation { createOneTestModel(data: { id: 1, geometry: "{\"type\": \"Point\", \"coordinates\": [1,2]}" }) { geometry }}"#,
+          // MongoDB excludes undefined fields
+          MongoDb(_) => vec![r#"{"data":{"createOneTestModel":{"geometry":"{\"type\":\"Point\",\"coordinates\":[1,2]}"}}}"#],
+          _ => vec![r#"{"data":{"createOneTestModel":{"geometry":"{\"type\": \"Point\", \"coordinates\": [1,2]}"}}}"#]
+        );
+
+        insta::assert_snapshot!(
+          run_query!(&runner, r#"mutation { createOneTestModel(data: { id: 2, geometry: null }) { geometry }}"#),
+          @r###"{"data":{"createOneTestModel":{"geometry":null}}}"###
+        );
+
+        insta::assert_snapshot!(
+          run_query!(&runner, r#"mutation { createOneTestModel(data: { id: 3 }) { geometry }}"#),
+          @r###"{"data":{"createOneTestModel":{"geometry":null}}}"###
+        );
+
+        Ok(())
+    }
+
+    fn geometry_opt() -> String {
+        let schema = indoc! {
+            r#"model TestModel {
+              #id(id, Int, @id)
+              geometry GeoJson?
+          }"#
+        };
+
+        schema.to_owned()
+    }
+
+    fn geometry_opt_postgres() -> String {
+        let schema = indoc! {
+            r#"model TestModel {
+              @@schema("test")
+              #id(id, Int, @id)
+              geometry GeoJson?
+          }"#
+        };
+
+        schema.to_owned()
+    }
+
+    #[connector_test(schema(geometry_opt), exclude(Postgres, Sqlite(3, "libsql.js")))]
+    async fn create_geometry(runner: Runner) -> TestResult<()> {
+        create_geometry_test(runner).await
+    }
+
+    #[connector_test(
+        schema(geometry_opt_postgres),
+        db_schemas("public", "test"),
+        only(Postgres("15-postgis"))
+    )]
+    async fn create_geometry_postgres(runner: Runner) -> TestResult<()> {
+        create_geometry_test(runner).await
     }
 }

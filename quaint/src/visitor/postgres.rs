@@ -78,33 +78,27 @@ impl<'a> Visitor<'a> for Postgres<'a> {
         variants: Vec<EnumVariant<'a>>,
         name: Option<EnumName<'a>>,
     ) -> visitor::Result {
-        let len = variants.len();
-
         // Since enums are user-defined custom types, tokio-postgres fires an additional query
         // when parameterizing values of type enum to know which custom type the value refers to.
         // Casting the enum value to `TEXT` avoid this roundtrip since `TEXT` is a builtin type.
         if let Some(enum_name) = name.clone() {
-            self.surround_with("ARRAY[", "]", |s| {
-                for (i, variant) in variants.into_iter().enumerate() {
-                    s.add_parameter(variant.into_text());
-                    s.parameter_substitution()?;
-                    s.write("::text")?;
+            self.add_parameter(Value::array(variants.into_iter().map(|v| v.into_text())));
 
-                    if i < (len - 1) {
-                        s.write(", ")?;
-                    }
+            self.surround_with("CAST(", ")", |s| {
+                s.parameter_substitution()?;
+                s.write("::text[]")?;
+                s.write(" AS ")?;
+
+                if let Some(schema_name) = enum_name.schema_name {
+                    s.surround_with_backticks(schema_name.deref())?;
+                    s.write(".")?
                 }
+
+                s.surround_with_backticks(enum_name.name.deref())?;
+                s.write("[]")?;
 
                 Ok(())
             })?;
-
-            self.write("::")?;
-            if let Some(schema_name) = enum_name.schema_name {
-                self.surround_with_backticks(schema_name.deref())?;
-                self.write(".")?
-            }
-            self.surround_with_backticks(enum_name.name.deref())?;
-            self.write("[]")?;
         } else {
             self.visit_parameterized(Value::array(
                 variants.into_iter().map(|variant| variant.into_enum(name.clone())),
@@ -234,6 +228,13 @@ impl<'a> Visitor<'a> for Postgres<'a> {
             ValueType::DateTime(dt) => dt.map(|dt| self.write(format!("'{}'", dt.to_rfc3339(),))),
             ValueType::Date(date) => date.map(|date| self.write(format!("'{date}'"))),
             ValueType::Time(time) => time.map(|time| self.write(format!("'{time}'"))),
+            // TODO@geometry: find a way to avoid cloning
+            ValueType::Geometry(g) => g
+                .as_ref()
+                .map(|g| self.visit_function(geom_from_text(g.wkt.clone().raw(), g.srid.raw(), false))),
+            ValueType::Geography(g) => g
+                .as_ref()
+                .map(|g| self.visit_function(geom_from_text(g.wkt.clone().raw(), g.srid.raw(), true))),
         };
 
         match res {
@@ -380,6 +381,12 @@ impl<'a> Visitor<'a> for Postgres<'a> {
             _ => "",
         };
 
+        // TODO@geometry: file a bug report to PostGIS ? (ERROR:  operator is not unique: geometry <> geometry)
+        if left.is_geometry_expr() && right.is_geometry_expr() {
+            self.write("NOT ")?;
+            return self.visit_equals(left, right);
+        }
+
         self.visit_expression(left)?;
         self.write(left_cast)?;
         self.write(" <> ")?;
@@ -502,6 +509,30 @@ impl<'a> Visitor<'a> for Postgres<'a> {
                 self.visit_column(*column)?;
                 self.write("::jsonb)")
             }
+        }
+    }
+
+    fn visit_geometry_type_equals(
+        &mut self,
+        left: Expression<'a>,
+        geom_type: GeometryType<'a>,
+        not: bool,
+    ) -> visitor::Result {
+        self.write("ST_GeometryType")?;
+        self.surround_with("(", ")", |s| s.visit_expression(left))?;
+
+        if not {
+            self.write(" != ")?;
+        } else {
+            self.write(" = ")?;
+        }
+
+        match geom_type {
+            GeometryType::ColumnRef(column) => {
+                self.write("ST_GeometryType")?;
+                self.surround_with("(", ")", |s| s.visit_column(*column))
+            }
+            _ => self.visit_expression(Value::text(format!("ST_{geom_type}")).into()),
         }
     }
 
@@ -633,11 +664,53 @@ impl<'a> Visitor<'a> for Postgres<'a> {
 
         Ok(())
     }
+
+    fn visit_min(&mut self, min: Minimum<'a>) -> visitor::Result {
+        // If the inner column is a selected enum, then we cast the result of MIN(enum)::text instead of casting the inner enum column, which changes the behavior of MIN.
+        let should_cast = min.column.is_enum && min.column.is_selected;
+
+        self.write("MIN")?;
+        self.surround_with("(", ")", |ref mut s| s.visit_column(min.column.set_is_selected(false)))?;
+
+        if should_cast {
+            self.write("::text")?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_max(&mut self, max: Maximum<'a>) -> visitor::Result {
+        // If the inner column is a selected enum, then we cast the result of MAX(enum)::text instead of casting the inner enum column, which changes the behavior of MAX.
+        let should_cast = max.column.is_enum && max.column.is_selected;
+
+        self.write("MAX")?;
+        self.surround_with("(", ")", |ref mut s| s.visit_column(max.column.set_is_selected(false)))?;
+
+        if should_cast {
+            self.write("::text")?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_geom_as_text(&mut self, geom: GeomAsText<'a>) -> visitor::Result {
+        self.surround_with("ST_AsEWKT(", ")", |s| s.visit_expression(*geom.expression))
+    }
+
+    fn visit_geom_from_text(&mut self, geom: GeomFromText<'a>) -> visitor::Result {
+        self.surround_with("ST_GeomFromText(", ")", |ref mut s| {
+            s.visit_expression(*geom.wkt_expression)?;
+            s.write(",")?;
+            s.visit_expression(*geom.srid_expression)?;
+            Ok(())
+        })
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::visitor::*;
+    use std::str::FromStr;
 
     fn expected_values<'a, T>(sql: &'static str, params: Vec<T>) -> (String, Vec<Value<'a>>)
     where
@@ -1038,6 +1111,22 @@ mod tests {
     }
 
     #[test]
+    fn test_raw_geometry() {
+        let geom = GeometryValue::from_str("SRID=4326;POINT(0 0)").unwrap();
+        let (sql, params) = Postgres::build(Select::default().value(Value::geometry(geom).raw())).unwrap();
+        assert_eq!("SELECT ST_GeomFromText('POINT(0 0)',4326)", sql);
+        assert!(params.is_empty());
+    }
+
+    #[test]
+    fn test_raw_geography() {
+        let geom = GeometryValue::from_str("SRID=4326;POINT(0 0)").unwrap();
+        let (sql, params) = Postgres::build(Select::default().value(Value::geography(geom).raw())).unwrap();
+        assert_eq!("SELECT ST_GeomFromText('POINT(0 0)',4326)", sql);
+        assert!(params.is_empty());
+    }
+
+    #[test]
     fn test_raw_comparator() {
         let (sql, _) = Postgres::build(Select::from_table("foo").so_that("bar".compare_raw("ILIKE", "baz%"))).unwrap();
 
@@ -1162,5 +1251,16 @@ mod tests {
         let (sql, _) = Postgres::build(q).unwrap();
 
         assert_eq!("SELECT \"User\".*, \"Toto\".* FROM \"User\" LEFT JOIN \"Post\" AS \"p\" ON \"p\".\"userId\" = \"User\".\"id\", \"Toto\"", sql);
+    }
+
+    #[test]
+    fn enum_cast_text_in_min_max_should_be_outside() {
+        let enum_col = Column::from("enum").set_is_enum(true).set_is_selected(true);
+        let q = Select::from_table("User")
+            .value(min(enum_col.clone()))
+            .value(max(enum_col));
+        let (sql, _) = Postgres::build(q).unwrap();
+
+        assert_eq!("SELECT MIN(\"enum\")::text, MAX(\"enum\")::text FROM \"User\"", sql);
     }
 }

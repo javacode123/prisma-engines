@@ -380,7 +380,7 @@ model User {
         let intro_res = test_introspect(
             &r##"datasource db {
               provider = "mysql"
-                url      = "mysql://root:123456,zjl@localhost:3306/prisma_demo"
+                url      = "mysql://root:*@localhost:3306/geo"
         
                }"##
             .to_string(),
@@ -397,21 +397,15 @@ model User {
         tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).init();
         let source = r##"
         datasource db {
-          provider = "mysql"
-          url      = "mysql://***@localhost:3306/prisma_demo"
-        }
-        /// comment
-       model User {
-          id String @id
-          k  String
-          e    p_e?
-        }
-        
-        enum p_e {
-          a
-          b
-          c
-        }
+  provider = "mysql"
+  url      = "mysql://root:*@localhost:3306/geo"
+}
+
+model places {
+  id       Int       @id @default(autoincrement())
+  name     String?   @db.VarChar(255)
+  location Geometry? @db.Point
+}
         "##;
         let res = test_push(&source).await;
         println!("\nout_put:\n{:?}\n", res);

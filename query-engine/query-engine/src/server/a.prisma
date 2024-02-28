@@ -1,50 +1,10 @@
 datasource db {
   provider = "mysql"
-  url      = "mysql://root:******@localhost:3306/yxy"
+  url      = "mysql://root:*@localhost:3306/geo"
 }
 
-model WebpageChatMessage {
-  content                 String
-  role                    String
-  id                      String                    @id
-  WebpageChatMessageExtra WebpageChatMessageExtra[]
-}
-
-model WebpageChatMessageExtra {
-  id                 String             @id
-  messageId          String
-  type               String
-  detail             String
-  WebpageChatMessage WebpageChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
-
-  @@index([messageId], map: "WebpageChatMessageExtra_messageId_fkey")
-}
-
-/// 账户信
-model account {
-  /// ID
-  id       Int    @id
-  /// 多商
-  i2       Int?
-  user     Int?   @map("_user")
-  json_str Json?
-  post     post[]
-}
-
-/// 升级条件表
-model post {
-  /// 自动升级条件ID
-  id         Int       @id @default(autoincrement())
-  /// 分销商等级ID
-  account_id Int
-  /// 创建时间
-  created_at DateTime? @default(now()) @db.Timestamp(0)
-  /// 更新时间
-  updated_at DateTime? @default(now()) @db.Timestamp(0)
-  /// 删除时间
-  deleted_at DateTime? @db.Timestamp(0)
-  json_str   Json?
-  account    account   @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_account_id")
-
-  @@index([account_id], map: "fk_account_id")
+model places {
+  id       Int       @id @default(autoincrement())
+  name     String?   @db.VarChar(255)
+  location Geometry? @db.Point
 }

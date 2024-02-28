@@ -1,9 +1,9 @@
 use crate::{IdentifierType, ObjectType, OutputField};
-use prisma_models::{ast, InternalDataModel};
 use psl::{
     datamodel_connector::{Connector, ConnectorCapabilities, ConnectorCapability, RelationMode},
     PreviewFeature, PreviewFeatures,
 };
+use query_structure::{ast, InternalDataModel};
 use std::{collections::HashMap, fmt};
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -313,6 +313,8 @@ pub enum ScalarType {
     JsonList,
     UUID,
     Bytes,
+    GeoJson,
+    Geometry,
 }
 
 impl fmt::Display for ScalarType {
@@ -330,6 +332,8 @@ impl fmt::Display for ScalarType {
             ScalarType::UUID => "UUID",
             ScalarType::JsonList => "Json",
             ScalarType::Bytes => "Bytes",
+            ScalarType::GeoJson => "GeoJson",
+            ScalarType::Geometry => "Geometry",
         };
 
         f.write_str(typ)

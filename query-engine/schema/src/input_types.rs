@@ -1,7 +1,7 @@
 use super::*;
 use fmt::Debug;
 use once_cell::sync::Lazy;
-use prisma_models::{prelude::ParentContainer, DefaultKind};
+use query_structure::{prelude::ParentContainer, DefaultKind};
 use std::{borrow::Cow, boxed::Box, fmt};
 
 type InputObjectFields<'a> =
@@ -275,6 +275,14 @@ impl<'a> InputType<'a> {
 
     pub(crate) fn bytes() -> InputType<'a> {
         InputType::Scalar(ScalarType::Bytes)
+    }
+
+    pub(crate) fn ewkt_geometry() -> InputType<'a> {
+        InputType::Scalar(ScalarType::Geometry)
+    }
+
+    pub(crate) fn geojson_geometry() -> InputType<'a> {
+        InputType::Scalar(ScalarType::GeoJson)
     }
 
     pub(crate) fn null() -> InputType<'a> {

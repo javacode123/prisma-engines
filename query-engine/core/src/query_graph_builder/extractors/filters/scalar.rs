@@ -1,9 +1,5 @@
 use crate::{ParsedInputMap, ParsedInputValue, QueryGraphBuilderError, QueryGraphBuilderResult};
-use connector::{
-    ConditionListValue, ConditionValue, Filter, JsonCompare, JsonFilterPath, JsonTargetType, ScalarCompare,
-    ScalarListCompare,
-};
-use prisma_models::{prelude::ParentContainer, Field, PrismaValue, ScalarFieldRef, TypeIdentifier};
+use query_structure::{prelude::ParentContainer, *};
 use schema::constants::{aggregations, filters, json_null};
 use std::convert::TryInto;
 
@@ -177,6 +173,24 @@ impl<'a> ScalarFilterParser<'a> {
             filters::HAS_EVERY => Ok(vec![field.contains_every_element(self.as_condition_list_value(input)?)]),
             filters::HAS_SOME => Ok(vec![field.contains_some_element(self.as_condition_list_value(input)?)]),
             filters::IS_EMPTY => Ok(vec![field.is_empty_list(input.try_into()?)]),
+
+            // Geometry-specific filters
+            filters::GEO_WITHIN => {
+                if self.reverse() {
+                    Ok(vec![field.geometry_not_within(self.as_condition_value(input, false)?)])
+                } else {
+                    Ok(vec![field.geometry_within(self.as_condition_value(input, false)?)])
+                }
+            }
+            filters::GEO_INTERSECTS => {
+                if self.reverse() {
+                    Ok(vec![
+                        field.geometry_not_intersects(self.as_condition_value(input, false)?)
+                    ])
+                } else {
+                    Ok(vec![field.geometry_intersects(self.as_condition_value(input, false)?)])
+                }
+            }
 
             // Aggregation filters
             aggregations::UNDERSCORE_COUNT => self.aggregation_filter(input, Filter::count, true),

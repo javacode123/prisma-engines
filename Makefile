@@ -49,8 +49,11 @@ ifndef DRIVER_ADAPTER
 	cargo test --package query-engine-tests
 else
 	@echo "Executing query engine tests with $(DRIVER_ADAPTER) driver adapter"; \
-	# Add your actual command for the "test-driver-adapter" task here
-	$(MAKE) test-driver-adapter-$(DRIVER_ADAPTER);
+	if [ "$(ENGINE)" = "wasm" ]; then \
+		$(MAKE) test-driver-adapter-$(DRIVER_ADAPTER)-wasm; \
+	else \
+		$(MAKE) test-driver-adapter-$(DRIVER_ADAPTER); \
+	fi
 endif
 
 test-qe-verbose:
@@ -84,12 +87,23 @@ start-sqlite:
 dev-sqlite:
 	cp $(CONFIG_PATH)/sqlite $(CONFIG_FILE)
 
-dev-libsql-sqlite: build-qe-napi build-connector-kit-js
-	cp $(CONFIG_PATH)/libsql-sqlite $(CONFIG_FILE)
+start-spatialite:
 
-test-libsql-sqlite: dev-libsql-sqlite test-qe-st
+dev-spatialite:
+	cp $(CONFIG_PATH)/spatialite $(CONFIG_FILE)
 
-test-driver-adapter-libsql: test-libsql-sqlite
+dev-libsql-js: build-qe-napi build-connector-kit-js
+	cp $(CONFIG_PATH)/libsql-js $(CONFIG_FILE)
+
+test-libsql-js: dev-libsql-js test-qe-st
+
+test-driver-adapter-libsql: test-libsql-js
+
+dev-libsql-wasm: build-qe-wasm build-connector-kit-js
+	cp $(CONFIG_PATH)/libsql-wasm $(CONFIG_FILE)
+
+test-libsql-wasm: dev-libsql-wasm test-qe-st
+test-driver-adapter-libsql-wasm: test-libsql-wasm
 
 start-postgres9:
 	docker compose -f docker-compose.yml up --wait -d --remove-orphans postgres9
@@ -121,24 +135,36 @@ start-postgres13:
 dev-postgres13: start-postgres13
 	cp $(CONFIG_PATH)/postgres13 $(CONFIG_FILE)
 
-start-pg-postgres13: build-qe-napi build-connector-kit-js start-postgres13
+start-pg-js: start-postgres13
 
-dev-pg-postgres13: start-pg-postgres13
-	cp $(CONFIG_PATH)/pg-postgres13 $(CONFIG_FILE)
+dev-pg-js: start-pg-js build-qe-napi build-connector-kit-js
+	cp $(CONFIG_PATH)/pg-js $(CONFIG_FILE)
 
-test-pg-postgres13: dev-pg-postgres13 test-qe-st
+test-pg-js: dev-pg-js test-qe-st
 
-test-driver-adapter-pg: test-pg-postgres13
+dev-pg-wasm: start-pg-js build-qe-wasm build-connector-kit-js
+	cp $(CONFIG_PATH)/pg-wasm $(CONFIG_FILE)
 
-start-neon-postgres13: build-qe-napi build-connector-kit-js
-	docker compose -f docker-compose.yml up --wait -d --remove-orphans neon-postgres13
+test-pg-wasm: dev-pg-wasm test-qe-st
 
-dev-neon-ws-postgres13: start-neon-postgres13
-	cp $(CONFIG_PATH)/neon-ws-postgres13 $(CONFIG_FILE)
+test-driver-adapter-pg: test-pg-js
+test-driver-adapter-pg-wasm: test-pg-wasm
 
-test-neon-ws-postgres13: dev-neon-ws-postgres13 test-qe-st
+start-neon-js:
+	docker compose -f docker-compose.yml up --wait -d --remove-orphans neon-proxy
 
-test-driver-adapter-neon: test-neon-ws-postgres13
+dev-neon-js: start-neon-js build-qe-napi build-connector-kit-js
+	cp $(CONFIG_PATH)/neon-js $(CONFIG_FILE)
+
+test-neon-js: dev-neon-js test-qe-st
+
+dev-neon-wasm: start-neon-js build-qe-wasm build-connector-kit-js
+	cp $(CONFIG_PATH)/neon-wasm $(CONFIG_FILE)
+
+test-neon-wasm: dev-neon-wasm test-qe-st
+
+test-driver-adapter-neon: test-neon-js
+test-driver-adapter-neon-wasm: test-neon-wasm
 
 start-postgres14:
 	docker compose -f docker-compose.yml up --wait -d --remove-orphans postgres14
@@ -151,6 +177,12 @@ start-postgres15:
 
 dev-postgres15: start-postgres15
 	cp $(CONFIG_PATH)/postgres15 $(CONFIG_FILE)
+
+start-postgis15:
+	docker compose -f docker-compose.yml up -d --remove-orphans postgis15
+
+dev-postgis15: start-postgis15
+	cp $(CONFIG_PATH)/postgis15 $(CONFIG_FILE)
 
 start-cockroach_23_1:
 	docker compose -f docker-compose.yml up --wait -d --remove-orphans cockroach_23_1
@@ -256,27 +288,27 @@ dev-mongodb_5: start-mongodb_5
 dev-mongodb_4_2: start-mongodb_4_2
 	cp $(CONFIG_PATH)/mongodb42 $(CONFIG_FILE)
 
-start-vitess_5_7:
-	docker compose -f docker-compose.yml up --wait -d --remove-orphans vitess-test-5_7 vitess-shadow-5_7
-
-dev-vitess_5_7: start-vitess_5_7
-	cp $(CONFIG_PATH)/vitess_5_7 $(CONFIG_FILE)
-
 start-vitess_8_0:
 	docker compose -f docker-compose.yml up --wait -d --remove-orphans vitess-test-8_0 vitess-shadow-8_0
 
 dev-vitess_8_0: start-vitess_8_0
 	cp $(CONFIG_PATH)/vitess_8_0 $(CONFIG_FILE)
 
-start-planetscale-vitess8: build-qe-napi build-connector-kit-js
-	docker compose -f docker-compose.yml up -d --remove-orphans planetscale-vitess8
+start-planetscale-js:
+	docker compose -f docker-compose.yml up -d --remove-orphans planetscale-proxy
 
-dev-planetscale-vitess8: start-planetscale-vitess8
-	cp $(CONFIG_PATH)/planetscale-vitess8 $(CONFIG_FILE)
+dev-planetscale-js: start-planetscale-js build-qe-napi build-connector-kit-js
+	cp $(CONFIG_PATH)/planetscale-js $(CONFIG_FILE)
 
-test-planetscale-vitess8: dev-planetscale-vitess8 test-qe-st
+test-planetscale-js: dev-planetscale-js test-qe-st
 
-test-driver-adapter-planetscale: test-planetscale-vitess8
+dev-planetscale-wasm: start-planetscale-js build-qe-wasm build-connector-kit-js
+	cp $(CONFIG_PATH)/planetscale-wasm $(CONFIG_FILE)
+
+test-planetscale-wasm: dev-planetscale-wasm test-qe-st
+
+test-driver-adapter-planetscale: test-planetscale-js
+test-driver-adapter-planetscale-wasm: test-planetscale-wasm
 
 ######################
 # Local dev commands #
@@ -284,6 +316,9 @@ test-driver-adapter-planetscale: test-planetscale-vitess8
 
 build-qe-napi:
 	cargo build --package query-engine-node-api
+
+build-qe-wasm:
+	cd query-engine/query-engine-wasm && ./build.sh
 
 build-connector-kit-js: build-driver-adapters
 	cd query-engine/driver-adapters && pnpm i && pnpm build

@@ -430,6 +430,13 @@ fn render_column_type(column: TableColumnWalker<'_>) -> Cow<'static, str> {
         }
     }
 
+    fn render_srid(input: Option<u32>) -> String {
+        match input {
+            None => "".to_string(),
+            Some(srid) => format!(" SRID {srid}"),
+        }
+    }
+
     fn render_decimal(input: Option<(u32, u32)>) -> String {
         match input {
             None => "".to_string(),
@@ -471,6 +478,14 @@ fn render_column_type(column: TableColumnWalker<'_>) -> Cow<'static, str> {
         MySqlType::UnsignedTinyInt => "TINYINT UNSIGNED".into(),
         MySqlType::UnsignedMediumInt => "MEDIUMINT UNSIGNED".into(),
         MySqlType::UnsignedBigInt => "BIGINT UNSIGNED".into(),
+        MySqlType::Geometry(srid) => format!("GEOMETRY{}", render_srid(*srid)).into(),
+        MySqlType::Point(srid) => format!("POINT{}", render_srid(*srid)).into(),
+        MySqlType::LineString(srid) => format!("LINESTRING{}", render_srid(*srid)).into(),
+        MySqlType::Polygon(srid) => format!("POLYGON{}", render_srid(*srid)).into(),
+        MySqlType::MultiPoint(srid) => format!("MULTIPOINT{}", render_srid(*srid)).into(),
+        MySqlType::MultiLineString(srid) => format!("MULTILINESTRING{}", render_srid(*srid)).into(),
+        MySqlType::MultiPolygon(srid) => format!("MULTIPOLYGON{}", render_srid(*srid)).into(),
+        MySqlType::GeometryCollection(srid) => format!("GEOMETRYCOLLECTION{}", render_srid(*srid)).into(),
     }
 }
 

@@ -1,7 +1,7 @@
 use super::*;
 use fmt::Debug;
 use once_cell::sync::Lazy;
-use prisma_models::ast::ModelId;
+use query_structure::ast::ModelId;
 use std::{borrow::Cow, fmt};
 
 #[derive(Debug, Clone)]
@@ -75,6 +75,14 @@ impl<'a> OutputType<'a> {
 
     pub(crate) fn bytes() -> InnerOutputType<'a> {
         InnerOutputType::Scalar(ScalarType::Bytes)
+    }
+
+    pub(crate) fn ewkt_geometry() -> InnerOutputType<'a> {
+        InnerOutputType::Scalar(ScalarType::Geometry)
+    }
+
+    pub(crate) fn geojson_geometry() -> InnerOutputType<'a> {
+        InnerOutputType::Scalar(ScalarType::GeoJson)
     }
 
     /// Attempts to recurse through the type until an object type is found.

@@ -2,11 +2,11 @@ use crate::serialization_ast::datamodel_ast::{
     Datamodel, Enum, EnumValue, Field, Function, Model, PrimaryKey, UniqueIndex,
 };
 use bigdecimal::ToPrimitive;
-use prisma_models::{dml_default_kind, encode_bytes, DefaultKind, FieldArity, PrismaValue};
 use psl::{
     parser_database::{walkers, ScalarFieldType},
     schema_ast::ast::WithDocumentation,
 };
+use query_structure::{dml_default_kind, encode_bytes, DefaultKind, FieldArity, PrismaValue};
 
 pub(crate) fn schema_to_dmmf(schema: &psl::ValidatedSchema) -> Datamodel {
     let mut datamodel = Datamodel {
@@ -262,6 +262,8 @@ fn prisma_value_to_serde(value: &PrismaValue) -> serde_json::Value {
         PrismaValue::Null => serde_json::Value::Null,
         PrismaValue::Uuid(val) => serde_json::Value::String(val.to_string()),
         PrismaValue::Json(val) => serde_json::Value::String(val.to_string()),
+        PrismaValue::GeoJson(val) => serde_json::Value::String(val.to_string()),
+        PrismaValue::Geometry(val) => serde_json::Value::String(val.to_string()),
         PrismaValue::List(value_vec) => serde_json::Value::Array(value_vec.iter().map(prisma_value_to_serde).collect()),
         PrismaValue::Bytes(b) => serde_json::Value::String(encode_bytes(b)),
         PrismaValue::Object(pairs) => {

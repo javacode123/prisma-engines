@@ -1,8 +1,8 @@
 use crate::row::{sanitize_f32, sanitize_f64};
 use bigdecimal::{BigDecimal, FromPrimitive};
 use chrono::{DateTime, NaiveDate, Utc};
-use prisma_models::PrismaValue;
 use quaint::ValueType;
+use query_structure::PrismaValue;
 
 pub fn to_prisma_value<'a, T: Into<ValueType<'a>>>(qv: T) -> crate::Result<PrismaValue> {
     let val = match qv.into() {
@@ -97,6 +97,10 @@ pub fn to_prisma_value<'a, T: Into<ValueType<'a>>>(qv: T) -> crate::Result<Prism
 
         ValueType::Xml(s) => s
             .map(|s| PrismaValue::String(s.into_owned()))
+            .unwrap_or(PrismaValue::Null),
+
+        ValueType::Geometry(s) | ValueType::Geography(s) => s
+            .map(|s| PrismaValue::Geometry(s.to_string()))
             .unwrap_or(PrismaValue::Null),
     };
 

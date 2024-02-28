@@ -34,7 +34,7 @@ pub fn render_graphql_schema(query_schema: &QuerySchema) -> String {
 
     // Add custom scalar types (required for graphql.js implementations)
     format!(
-        "{}\n\nscalar DateTime\nscalar Json\nscalar UUID\nscalar BigInt\nscalar Decimal\nscalar Bytes",
+        "{}\n\nscalar DateTime\nscalar Json\nscalar UUID\nscalar BigInt\nscalar Decimal\nscalar Bytes\nscalar Geometry\nscalar GeoJson",
         context.format()
     )
 }

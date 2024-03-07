@@ -1,10 +1,10 @@
 datasource db {
-  provider = "mysql"
-  url      = "mysql://root:*@localhost:3306/geo"
+  provider = "postgres"
+  url      = "postgres://*@localhost:5433/zjl"
 }
 
-model places {
-  id       Int       @id @default(autoincrement())
-  name     String?   @db.VarChar(255)
-  location Geometry? @db.Point
+model cities {
+  name     String?   @db.VarChar(80)
+  location Geometry? @db.Geography(Point, 4326)
+  id       Int       @id(map: "cities_pk")
 }

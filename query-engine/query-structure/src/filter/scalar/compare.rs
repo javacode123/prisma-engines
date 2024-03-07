@@ -211,6 +211,28 @@ impl ScalarCompare for ScalarFieldRef {
         })
     }
 
+    fn geometry_dwithin<T>(&self, val: T) -> Filter
+    where
+        T: Into<ConditionValue>,
+    {
+        Filter::from(ScalarFilter {
+            projection: ScalarProjection::Single(self.clone()),
+            condition: ScalarCondition::GeometryDWithin(val.into()),
+            mode: QueryMode::Default,
+        })
+    }
+
+    fn geometry_not_dwithin<T>(&self, val: T) -> Filter
+    where
+        T: Into<ConditionValue>,
+    {
+        Filter::from(ScalarFilter {
+            projection: ScalarProjection::Single(self.clone()),
+            condition: ScalarCondition::GeometryNotWithin(val.into()),
+            mode: QueryMode::Default,
+        })
+    }
+
     fn geometry_not_within<T>(&self, val: T) -> Filter
     where
         T: Into<ConditionValue>,
@@ -455,6 +477,17 @@ impl ScalarCompare for ModelProjection {
         })
     }
 
+    fn geometry_dwithin<T>(&self, val: T) -> Filter
+    where
+        T: Into<ConditionValue>,
+    {
+        Filter::from(ScalarFilter {
+            projection: ScalarProjection::Compound(self.scalar_fields().collect()),
+            condition: ScalarCondition::GeometryWithin(val.into()),
+            mode: QueryMode::Default,
+        })
+    }
+
     fn geometry_not_within<T>(&self, val: T) -> Filter
     where
         T: Into<ConditionValue>,
@@ -462,6 +495,17 @@ impl ScalarCompare for ModelProjection {
         Filter::from(ScalarFilter {
             projection: ScalarProjection::Compound(self.scalar_fields().collect()),
             condition: ScalarCondition::GeometryNotWithin(val.into()),
+            mode: QueryMode::Default,
+        })
+    }
+
+    fn geometry_not_dwithin<T>(&self, val: T) -> Filter
+    where
+        T: Into<ConditionValue>,
+    {
+        Filter::from(ScalarFilter {
+            projection: ScalarProjection::Compound(self.scalar_fields().collect()),
+            condition: ScalarCondition::GeometryNotDWithin(val.into()),
             mode: QueryMode::Default,
         })
     }
@@ -695,6 +739,28 @@ impl ScalarCompare for FieldSelection {
         Filter::from(ScalarFilter {
             projection: ScalarProjection::Compound(self.as_scalar_fields().expect("Todo composites in filters.")),
             condition: ScalarCondition::GeometryWithin(val.into()),
+            mode: QueryMode::Default,
+        })
+    }
+
+    fn geometry_dwithin<T>(&self, val: T) -> Filter
+    where
+        T: Into<ConditionValue>,
+    {
+        Filter::from(ScalarFilter {
+            projection: ScalarProjection::Compound(self.as_scalar_fields().expect("Todo composites in filters.")),
+            condition: ScalarCondition::GeometryWithin(val.into()),
+            mode: QueryMode::Default,
+        })
+    }
+
+    fn geometry_not_dwithin<T>(&self, val: T) -> Filter
+    where
+        T: Into<ConditionValue>,
+    {
+        Filter::from(ScalarFilter {
+            projection: ScalarProjection::Compound(self.as_scalar_fields().expect("Todo composites in filters.")),
+            condition: ScalarCondition::GeometryNotDWithin(val.into()),
             mode: QueryMode::Default,
         })
     }

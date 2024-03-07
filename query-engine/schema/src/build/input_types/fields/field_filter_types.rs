@@ -2,7 +2,7 @@ use super::{field_ref_type::WithFieldRefInputExt, objects::*, *};
 use constants::{aggregations, filters};
 use psl::datamodel_connector::ConnectorCapability;
 use query_structure::{CompositeFieldRef, DefaultKind, NativeTypeInstance, PrismaValue};
-
+use std::string::String;
 /// Builds filter types for the given model field.
 pub(crate) fn get_field_filter_types(
     ctx: &'_ QuerySchema,
@@ -523,8 +523,29 @@ fn geometric_filters<'a>(_ctx: &'a QuerySchema, mapped_type: InputType<'a>) -> i
     vec![
         input_field(filters::GEO_WITHIN, field_types.clone(), None, None).optional(),
         input_field(filters::GEO_INTERSECTS, field_types.clone(), None, None).optional(),
+        // 范围查询，查询某个点距离 n 的点
+        input_field(
+            filters::GEO_DWITHIN,
+            vec![InputType::object(geometric_dwithin_input_object_type())],
+            None,
+            None,
+        )
+        .optional(),
     ]
     .into_iter()
+}
+
+fn geometric_dwithin_input_object_type<'a>() -> InputObjectType<'a> {
+    let ident = Identifier::new_prisma(String::from("GeoDWithinFilter"));
+    let mut object = init_input_object_type(ident);
+    // object.set_tag(ObjectTag::FieldRefType(Box::new(allow_type)));
+    object.set_fields(|| {
+        vec![
+            input_field(filters::GEO_POINT, vec![InputType::ewkt_geometry()], None, None),
+            input_field(filters::GEO_DISTANCE, vec![InputType::decimal()], None, None),
+        ]
+    });
+    object
 }
 
 fn query_mode_field(ctx: &'_ QuerySchema, nested: bool) -> impl Iterator<Item = InputField<'_>> {

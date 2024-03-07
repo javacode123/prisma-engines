@@ -974,6 +974,12 @@ fn default_scalar_filter(
         ScalarCondition::GeometryNotIntersects(value) => {
             comparable.geometry_not_intersects(convert_first_value(fields, value, alias, ctx))
         }
+        ScalarCondition::GeometryDWithin(value) => {
+            comparable.geometry_dwithin(convert_first_value(fields, value, alias, ctx))
+        }
+        ScalarCondition::GeometryNotDWithin(value) => {
+            comparable.geometry_not_dwithin(convert_first_value(fields, value, alias, ctx))
+        }
         ScalarCondition::JsonCompare(_) => unreachable!(),
         ScalarCondition::IsSet(_) => unreachable!(),
     };
@@ -1158,6 +1164,8 @@ fn insensitive_scalar_filter(
         ScalarCondition::GeometryNotWithin(_) => unreachable!(),
         ScalarCondition::GeometryIntersects(_) => unreachable!(),
         ScalarCondition::GeometryNotIntersects(_) => unreachable!(),
+        ScalarCondition::GeometryDWithin(_) => unreachable!(),
+        ScalarCondition::GeometryNotDWithin(_) => unreachable!(),
         ScalarCondition::JsonCompare(_) => unreachable!(),
         ScalarCondition::IsSet(_) => unreachable!(),
     };

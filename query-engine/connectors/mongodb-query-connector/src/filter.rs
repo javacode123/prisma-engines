@@ -258,6 +258,14 @@ impl MongoFilterVisitor {
                 unimplemented!("Geometry filtering is not yet supported on MongoDB")
                 // doc! { "$not" : { "$geoIntersects": [&field_name, self.coerce_to_bson_for_filter(field, val)?] } }
             }
+            ScalarCondition::GeometryDWithin(_val) => {
+                unimplemented!("Geometry filtering is not yet supported on MongoDB")
+                // doc! { "$geoWithin": [&field_name, self.coerce_to_bson_for_filter(field, val)?] }
+            }
+            ScalarCondition::GeometryNotDWithin(_val) => {
+                unimplemented!("Geometry filtering is not yet supported on MongoDB")
+                // doc! { "$geoWithin": [&field_name, self.coerce_to_bson_for_filter(field, val)?] }
+            }
             ScalarCondition::IsSet(is_set) => render_is_set(&field_name, is_set),
             ScalarCondition::Search(_, _) => unimplemented!("Full-text search is not supported yet on MongoDB"),
             ScalarCondition::NotSearch(_, _) => unimplemented!("Full-text search is not supported yet on MongoDB"),
@@ -408,6 +416,12 @@ impl MongoFilterVisitor {
             )),
             ScalarCondition::GeometryNotIntersects(_) => Err(MongoError::Unsupported(
                 "Geometry NotIntersects insensitive filtering is not yet supported on MongoDB".to_string(),
+            )),
+            ScalarCondition::GeometryDWithin(_) => Err(MongoError::Unsupported(
+                "Geometry Contains insensitive filtering is not yet supported on MongoDB".to_string(),
+            )),
+            ScalarCondition::GeometryNotDWithin(_) => Err(MongoError::Unsupported(
+                "Geometry Contains insensitive filtering is not yet supported on MongoDB".to_string(),
             )),
             ScalarCondition::Search(_, _) | ScalarCondition::NotSearch(_, _) => Err(MongoError::Unsupported(
                 "Full-text search is not supported yet on MongoDB".to_string(),

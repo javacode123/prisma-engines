@@ -37,6 +37,22 @@ where
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub struct GeometryDValue {
+    pub point: GeometryValue,
+    pub distance: BigDecimal,
+}
+
+impl Display for GeometryDValue {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "GeometryDValue {{ point: {}, distance: {}}}",
+            self.point, self.distance
+        )
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub struct GeometryValue {
     pub wkt: String,
     pub srid: i32,
@@ -593,6 +609,8 @@ pub enum ValueType<'a> {
     Geometry(Option<GeometryValue>),
     /// A Geography value.
     Geography(Option<GeometryValue>),
+    // A Distance Geometry Value
+    DGeometry(Option<GeometryDValue>),
     /// A XML value.
     Xml(Option<Cow<'a, str>>),
     /// An UUID value.
@@ -671,6 +689,7 @@ impl<'a> fmt::Display for ValueType<'a> {
             ValueType::Time(val) => val.map(|v| write!(f, "\"{v}\"")),
             ValueType::Geometry(val) => val.as_ref().map(|v| write!(f, "\"{v}\"")),
             ValueType::Geography(val) => val.as_ref().map(|v| write!(f, "\"{v}\"")),
+            ValueType::DGeometry(val) => val.as_ref().map(|v| write!(f, "\"{v}\"")),
         };
 
         match res {
@@ -731,6 +750,7 @@ impl<'a> From<ValueType<'a>> for serde_json::Value {
             ValueType::Time(time) => time.map(|time| serde_json::Value::String(format!("{time}"))),
             ValueType::Geometry(g) => g.map(|g| serde_json::Value::String(g.to_string())),
             ValueType::Geography(g) => g.map(|g| serde_json::Value::String(g.to_string())),
+            ValueType::DGeometry(g) => g.map(|g| serde_json::Value::String(g.to_string())),
         };
 
         match res {
@@ -924,6 +944,7 @@ impl<'a> ValueType<'a> {
             Self::Json(json) => json.is_none(),
             Self::Geometry(geom) => geom.is_none(),
             Self::Geography(geom) => geom.is_none(),
+            Self::DGeometry(geom) => geom.is_none(),
         }
     }
 

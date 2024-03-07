@@ -110,6 +110,14 @@ pub mod filters {
     // geometry filters
     pub const GEO_WITHIN: &str = "geoWithin";
     pub const GEO_INTERSECTS: &str = "geoIntersects";
+    pub const GEO_DWITHIN: &str = "geoDWithin"; // 点的范围查询
+    pub const GEO_POINT: &str = "geoPoint";
+    // 在PostGIS中，`ST_DWithin`函数的第三个参数表示的是两个地理对象之间的距离，它的单位取决于你的空间数据类型和坐标系。
+    // 1. 对于`geometry`数据类型，这个距离是在笛卡尔坐标系（平面坐标系）中的单位。例如，如果你的坐标系是Web Mercator（EPSG:3857），那么这个单位就是米；如果你的坐标系是WGS 84（EPSG:4326），那么这个单位就是度。
+    // 2. 对于`geography`数据类型，这个距离总是以米为单位，不论你的坐标系是什么。这是因为`geography`类型使用球面坐标系（经纬度坐标系），并假设数据存在于地球表面上。
+    // 所以，如果你是用`geometry`类型并且你的坐标系是WGS 84（EPSG:4326），那么你需要将距离转换为度。如果你是用`geography`类型，那么你可以直接使用米作为单位。
+    // 请注意，因为地球的曲率和经纬度的不同，使用度作为单位可能会导致一些偏差。如果你需要更准确的结果，你应该使用`geography`类型。
+    pub const GEO_DISTANCE: &str = "distanceInCrsUnits";
 }
 
 pub mod aggregations {

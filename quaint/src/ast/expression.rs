@@ -576,6 +576,20 @@ impl<'a> Comparable<'a> for Expression<'a> {
         Compare::GeometryCompare(GeometryCompare::Within(Box::new(self), Box::new(geom.into())))
     }
 
+    fn geometry_dwithin<T>(self, geom: T) -> Compare<'a>
+    where
+        T: Into<Expression<'a>>,
+    {
+        Compare::GeometryCompare(GeometryCompare::DWithin(Box::new(self), Box::new(geom.into())))
+    }
+
+    fn geometry_not_dwithin<T>(self, geom: T) -> Compare<'a>
+    where
+        T: Into<Expression<'a>>,
+    {
+        Compare::GeometryCompare(GeometryCompare::NotDWithin(Box::new(self), Box::new(geom.into())))
+    }
+
     fn geometry_not_within<T>(self, geom: T) -> Compare<'a>
     where
         T: Into<Expression<'a>>,

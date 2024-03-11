@@ -7,6 +7,7 @@ use psl::{
     schema_ast::ast::WithDocumentation,
 };
 use query_structure::{dml_default_kind, encode_bytes, DefaultKind, FieldArity, PrismaValue};
+use schema::constants::filters;
 
 pub(crate) fn schema_to_dmmf(schema: &psl::ValidatedSchema) -> Datamodel {
     let mut datamodel = Datamodel {
@@ -272,6 +273,18 @@ fn prisma_value_to_serde(value: &PrismaValue) -> serde_json::Value {
                 map.insert(key.clone(), prisma_value_to_serde(value));
             });
 
+            serde_json::Value::Object(map)
+        }
+        PrismaValue::GeometryDistance(gd) => {
+            let mut map = serde_json::Map::with_capacity(2);
+            map.insert(
+                filters::GEO_DISTANCE.to_string(),
+                serde_json::Value::Number(serde_json::Number::from_f64(gd.distance.to_f64().unwrap()).unwrap()),
+            );
+            map.insert(
+                filters::GEO_POINT.to_string(),
+                serde_json::Value::String(gd.point.to_string()),
+            );
             serde_json::Value::Object(map)
         }
     }

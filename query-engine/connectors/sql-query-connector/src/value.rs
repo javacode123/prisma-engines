@@ -102,6 +102,7 @@ pub fn to_prisma_value<'a, T: Into<ValueType<'a>>>(qv: T) -> crate::Result<Prism
         ValueType::Geometry(s) | ValueType::Geography(s) => s
             .map(|s| PrismaValue::Geometry(s.to_string()))
             .unwrap_or(PrismaValue::Null),
+        ValueType::DGeometry(_) => unreachable!("DGeometry"),
     };
 
     Ok(val)

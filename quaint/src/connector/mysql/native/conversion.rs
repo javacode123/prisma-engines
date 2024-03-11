@@ -132,6 +132,7 @@ fn parse_value(value: &Value) -> (crate::Result<Vec<my::Value>>, usize) {
                     .map(my::Value::Bytes)
                     .unwrap_or_else(|_| panic!("Couldn't convert value `{g}` into EWKB."))
             }),
+            ValueType::DGeometry(_) => panic!("not impl for mysql"),
         };
         match mysql_value {
             Some(val) => (Ok(vec![val]), 0),

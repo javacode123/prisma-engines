@@ -65,6 +65,14 @@ pub trait ScalarCompare {
     where
         T: Into<ConditionValue>;
 
+    fn geometry_dwithin<T>(&self, val: T) -> Filter
+    where
+        T: Into<ConditionValue>;
+
+    fn geometry_not_dwithin<T>(&self, val: T) -> Filter
+    where
+        T: Into<ConditionValue>;
+
     fn geometry_not_within<T>(&self, val: T) -> Filter
     where
         T: Into<ConditionValue>;

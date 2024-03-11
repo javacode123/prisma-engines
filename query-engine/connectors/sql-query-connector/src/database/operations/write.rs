@@ -449,11 +449,14 @@ pub(crate) async fn query_raw(
     conn: &dyn Queryable,
     mut inputs: HashMap<String, PrismaValue>,
 ) -> crate::Result<serde_json::Value> {
-    let query = inputs.remove(QUERY_KEY).unwrap().into_string().unwrap();
-    let params = inputs.remove(PARAMETERS_KEY).unwrap().into_list().unwrap();
-    let (new_query, new_params) = convert_in_query(query.as_str(), params);
-    inputs.insert(QUERY_KEY.to_string(), PrismaValue::String(new_query));
-    inputs.insert(PARAMETERS_KEY.to_string(), PrismaValue::List(new_params));
+    let query = inputs.get(QUERY_KEY).unwrap().clone().into_string().unwrap();
+    let params = inputs.get(PARAMETERS_KEY).unwrap().clone().into_list().unwrap();
+    if query.contains("$") {
+        // pg 数据库
+        let (new_query, new_params) = convert_in_query(query.as_str(), params);
+        inputs.insert(QUERY_KEY.to_string(), PrismaValue::String(new_query));
+        inputs.insert(PARAMETERS_KEY.to_string(), PrismaValue::List(new_params));
+    }
     Ok(conn.raw_json(inputs).await?)
 }
 

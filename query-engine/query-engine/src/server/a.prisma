@@ -3,8 +3,6 @@ datasource db {
   url      = "postgres://*@localhost:5433/zjl"
 }
 
-model cities {
-  name     String?   @db.VarChar(80)
-  location Geometry? @db.Geography(Point, 4326)
-  id       Int       @id(map: "cities_pk")
+model k {
+  id Int @id
 }

@@ -3,8 +3,8 @@ use crate::column_metadata;
 use crate::filter::FilterBuilder;
 use crate::row::ToSqlRow;
 use crate::{
-    error::SqlError, model_extensions::*, query_builder::write, sql_trace::SqlTraceComment, Context, QueryExt,
-    Queryable,
+    error::SqlError, model_extensions::*, query_builder::write, query_ext::PARAMETERS_KEY, query_ext::QUERY_KEY,
+    sql_trace::SqlTraceComment, Context, QueryExt, Queryable,
 };
 use connector_interface::*;
 use itertools::Itertools;
@@ -13,6 +13,7 @@ use quaint::{
     prelude::{native_uuid, uuid_to_bin, uuid_to_bin_swapped, Aliasable, Select, SqlFamily},
 };
 use query_structure::*;
+use regex::Regex;
 use std::{
     collections::{HashMap, HashSet},
     ops::Deref,
@@ -446,7 +447,83 @@ pub(crate) async fn execute_raw(
 /// a JSON `Value`.
 pub(crate) async fn query_raw(
     conn: &dyn Queryable,
-    inputs: HashMap<String, PrismaValue>,
+    mut inputs: HashMap<String, PrismaValue>,
 ) -> crate::Result<serde_json::Value> {
+    let query = inputs.remove(QUERY_KEY).unwrap().into_string().unwrap();
+    let params = inputs.remove(PARAMETERS_KEY).unwrap().into_list().unwrap();
+    let (new_query, new_params) = convert_in_query(query.as_str(), params);
+    inputs.insert(QUERY_KEY.to_string(), PrismaValue::String(new_query));
+    inputs.insert(PARAMETERS_KEY.to_string(), PrismaValue::List(new_params));
     Ok(conn.raw_json(inputs).await?)
+}
+
+// 手动处理 pg in 查询, 将 query 中的 $k 转为 ($k,$k+1...), 将 params 的 listValue 拆解
+fn convert_in_query(query: &str, params: PrismaListValue) -> (String, PrismaListValue) {
+    let mut res = String::new();
+    let re = Regex::new(r" *\$\d+ *").unwrap();
+    let parts: Vec<&str> = re.split(query).collect();
+    let mut p_n = 1;
+    let mut expect_params: Vec<PrismaValue> = Vec::new();
+    for (i, part) in parts.iter().enumerate() {
+        res.push_str(part);
+        // 获取参数
+        if let Some(p) = params.get(i) {
+            // 参数为数组
+            if let PrismaValue::List(arr) = p {
+                // in 查询, 将 $k 转为 ($k,$k+1...)
+                res.push_str(" (");
+                for v in arr {
+                    expect_params.push(v.clone());
+                    res.push_str(&*format!("${},", p_n));
+                    p_n += 1
+                }
+                res.pop();
+                res.push_str(") ");
+            } else {
+                res.push_str(&*format!(" ${} ", p_n));
+                expect_params.push(p.clone());
+                p_n += 1
+            }
+        }
+    }
+    return (res, expect_params);
+}
+
+#[cfg(test)]
+mod tests {
+    extern crate regex;
+    use super::*;
+    use prisma_value::{PrismaListValue, PrismaValue};
+    #[test]
+    fn test_convert() {
+        let s = "select * from k where id in $1 and id = $2 and id= $3 and id = $4 ";
+        let params: PrismaListValue = vec![
+            PrismaValue::List(vec![PrismaValue::Int(1), PrismaValue::Int(2)]),
+            PrismaValue::Int(3),
+            PrismaValue::Int(4),
+            PrismaValue::List(vec![PrismaValue::Int(1), PrismaValue::Int(2)]),
+        ];
+        let (sql, p) = convert_in_query(s, params);
+        assert_eq!(
+            sql,
+            "select * from k where id in ($1,$2) and id = $3 and id= $4 and id = ($5,$6) "
+        );
+        assert_eq!(
+            p,
+            vec![
+                PrismaValue::Int(1),
+                PrismaValue::Int(2),
+                PrismaValue::Int(3),
+                PrismaValue::Int(4),
+                PrismaValue::Int(1),
+                PrismaValue::Int(2),
+            ]
+        );
+
+        let s = "select * from k where id = $1 ";
+        let params: PrismaListValue = vec![PrismaValue::Int(3)];
+        let (sql, p) = convert_in_query(s, params);
+        assert_eq!(sql, "select * from k where id = $1 ");
+        assert_eq!(p, vec![PrismaValue::Int(3),]);
+    }
 }

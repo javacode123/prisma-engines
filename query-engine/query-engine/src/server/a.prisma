@@ -1,8 +1,13 @@
 datasource db {
   provider = "postgres"
   url      = "postgres://*@localhost:5433/zjl"
+  // provider = "mysql"
+  // url      = "mysql://root:*@localhost:3306/zjl"
 }
 
-model k {
-  id Int @id
+model K {
+  id      Int     @id
+  content String?
+  u1      Int?
+  u2      Int?    @unique(map: "unique_k")
 }

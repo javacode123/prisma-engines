@@ -379,9 +379,8 @@ model User {
     async fn test_in() {
         let intro_res = test_introspect(
             &r##"datasource db {
-              provider = "postgres"
-              url      = "postgres://*@localhost:5433/zjl"
-        
+             provider = "postgres"
+  url      = "postgres://*@localhost:5433/zjl"
                }"##
             .to_string(),
         )

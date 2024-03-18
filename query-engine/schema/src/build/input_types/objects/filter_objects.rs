@@ -150,7 +150,12 @@ pub(crate) fn where_unique_object_type(ctx: &'_ QuerySchema, model: Model) -> In
                 let name = sf.borrowed_name(&ctx.internal_data_model.schema);
                 let typ = map_scalar_input_type_for_field(ctx, sf);
                 let comment = f.borrowed_comment(&ctx.internal_data_model.schema);
-                simple_input_field(name, typ, None, comment)
+                // 主键为 required, 非主键为 optional
+                if sf.is_id() {
+                    simple_input_field(name, typ, None, comment)
+                } else {
+                    InputField::new(name.into(), vec![typ], None, false, comment)
+                }
             })
             .collect();
 

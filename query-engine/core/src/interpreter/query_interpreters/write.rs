@@ -4,6 +4,8 @@ use crate::{
     QueryResult, RecordSelection,
 };
 use connector::{ConnectionLike, NativeUpsert};
+use prisma_value::{PrismaValue};
+use sql_query_connector::{query_ext::PARAMETERS_KEY};
 
 pub(crate) async fn execute(
     tx: &mut dyn ConnectionLike,
@@ -25,13 +27,19 @@ pub(crate) async fn execute(
     }
 }
 
-async fn query_raw(tx: &mut dyn ConnectionLike, q: RawQuery) -> InterpretationResult<QueryResult> {
+async fn query_raw(tx: &mut dyn ConnectionLike, mut q: RawQuery) -> InterpretationResult<QueryResult> {
+    if !q.inputs.contains_key(PARAMETERS_KEY) {
+        q.inputs.insert(PARAMETERS_KEY.to_string(), PrismaValue::List(vec![]));
+    }
     let res = tx.query_raw(q.model.as_ref(), q.inputs, q.query_type).await?;
 
     Ok(QueryResult::Json(res))
 }
 
-async fn execute_raw(tx: &mut dyn ConnectionLike, q: RawQuery) -> InterpretationResult<QueryResult> {
+async fn execute_raw(tx: &mut dyn ConnectionLike, mut q: RawQuery) -> InterpretationResult<QueryResult> {
+    if !q.inputs.contains_key(PARAMETERS_KEY) {
+        q.inputs.insert(PARAMETERS_KEY.to_string(), PrismaValue::List(vec![]));
+    }
     let res = tx.execute_raw(q.inputs).await?;
     let num = serde_json::Value::Number(serde_json::Number::from(res));
 

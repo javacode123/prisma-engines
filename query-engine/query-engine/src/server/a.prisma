@@ -1,13 +1,19 @@
 datasource db {
-  provider = "postgres"
-  url      = "postgres://*@localhost:5433/zjl"
-  // provider = "mysql"
-  // url      = "mysql://root:*@localhost:3306/zjl"
+  provider = "mysql"
+  url      = "mysql://*@localhost:3306/geo"
 }
 
-model K {
-  id      Int     @id
-  content String?
-  u1      Int?
-  u2      Int?    @unique(map: "unique_k")
+model Authors {
+  AuthorID Int     @id
+  Name     String  @db.VarChar(100)
+  Books    Books[]
+}
+
+model Books {
+  BookID   Int      @id
+  Title    String   @db.VarChar(100)
+  AuthorID Int?
+  Authors  Authors? @relation(fields: [AuthorID], references: [AuthorID], onDelete: NoAction, onUpdate: NoAction, map: "books_ibfk_1")
+
+  @@index([AuthorID], map: "AuthorID")
 }

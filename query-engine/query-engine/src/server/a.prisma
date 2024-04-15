@@ -1,19 +1,1 @@
-datasource db {
-  provider = "mysql"
-  url      = "mysql://*@localhost:3306/geo"
-}
 
-model Authors {
-  AuthorID Int     @id
-  Name     String  @db.VarChar(100)
-  Books    Books[]
-}
-
-model Books {
-  BookID   Int      @id
-  Title    String   @db.VarChar(100)
-  AuthorID Int?
-  Authors  Authors? @relation(fields: [AuthorID], references: [AuthorID], onDelete: NoAction, onUpdate: NoAction, map: "books_ibfk_1")
-
-  @@index([AuthorID], map: "AuthorID")
-}

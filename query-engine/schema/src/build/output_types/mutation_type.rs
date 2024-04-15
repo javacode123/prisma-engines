@@ -29,6 +29,7 @@ pub(crate) fn mutation_fields(ctx: &QuerySchema) -> Vec<FieldFn> {
         field!(update_item_field, model);
 
         field!(update_many_field, model);
+        field!(batch_update_many_field, model);
         field!(delete_many_field, model);
     }
 
@@ -169,6 +170,23 @@ fn update_many_field(ctx: &QuerySchema, model: Model) -> OutputField<'_> {
         Some(QueryInfo {
             model: Some(model.id),
             tag: QueryTag::UpdateMany,
+        }),
+        None,
+    )
+}
+
+/// Builds an update batch many mutation field (e.g. batchUpdateManyUsers) for given model.
+fn batch_update_many_field(ctx: &QuerySchema, model: Model) -> OutputField<'_> {
+    let field_name = format!("batchUpdateMany{}", model.name());
+    let cloned_model = model.clone();
+
+    field(
+        field_name,
+        move || arguments::batch_update_many_arguments(ctx, cloned_model),
+        OutputType::object(objects::affected_records_object_type()),
+        Some(QueryInfo {
+            model: Some(model.id),
+            tag: QueryTag::BatchUpdateMany,
         }),
         None,
     )

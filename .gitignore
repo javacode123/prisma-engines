@@ -50,3 +50,5 @@ prisma-schema-wasm/nodejs
 # Ignore pnpm-lock.yaml
 query-engine/driver-adapters/pnpm-lock.yaml
 package-lock.json
+
+query-engine/query-engine/src/server/a.prisma

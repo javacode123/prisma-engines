@@ -34,10 +34,9 @@ impl<'conn, 'schema> QueryPipeline<'conn, 'schema> {
 
         let result = self
             .interpreter
-            .interpret(expr, Env::default(), 0, trace_id)
+            .interpret(expr, Env::default(), 0, trace_id, serializer.key.starts_with("batchUpdateMany"))
             .instrument(span)
             .await;
-
         trace!("{}", self.interpreter.log_output());
         serializer.serialize(result?, query_schema)
     }

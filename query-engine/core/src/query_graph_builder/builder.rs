@@ -85,6 +85,7 @@ impl<'a> QueryGraphBuilder<'a> {
             (QueryTag::CreateMany, Some(m)) => QueryGraph::root(|g| write::create_many_records(g, query_schema,m, parsed_field)),
             (QueryTag::UpdateOne, Some(m)) => QueryGraph::root(|g| write::update_record(g, query_schema, m, parsed_field)),
             (QueryTag::UpdateMany, Some(m)) => QueryGraph::root(|g| write::update_many_records(g, query_schema, m, parsed_field)),
+            (QueryTag::BatchUpdateMany, Some(m)) => QueryGraph::root(|g| write::batch_update_many_records(g, query_schema, m, parsed_field)),
             (QueryTag::UpsertOne, Some(m)) => QueryGraph::root(|g| write::upsert_record(g, query_schema, m, parsed_field)),
             (QueryTag::DeleteOne, Some(m)) => QueryGraph::root(|g| write::delete_record(g, query_schema, m, parsed_field)),
             (QueryTag::DeleteMany, Some(m)) => QueryGraph::root(|g| write::delete_many_records(g, query_schema, m, parsed_field)),

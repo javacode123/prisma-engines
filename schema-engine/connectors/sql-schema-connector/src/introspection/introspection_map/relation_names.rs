@@ -151,7 +151,7 @@ fn inline_relation_name<'a>(
             Cow::Owned(format!("{self_relation_prefix}{referencing_model_name}")),
         ]
     } else {
-        let mut relation_name = referencing_model_name.clone().into_owned();
+        let mut relation_name = format!("{referenced_model_name}To{referencing_model_name}");
         relation_name.push('_');
         let mut cols = fk.constrained_columns().peekable();
         while let Some(col) = cols.next() {
@@ -160,12 +160,11 @@ fn inline_relation_name<'a>(
                 relation_name.push('_');
             }
         }
-        relation_name.push_str("To");
-        relation_name.push_str(&referenced_model_name);
 
         let forward = format!("{referenced_model_name}_{relation_name}");
         let back = format!("{self_relation_prefix}{referencing_model_name}_{relation_name}");
-
+        //      member_ [member To violation_comment_comment_id] member
+        // 现状：member_ [violation_comment_comment_id To member] member
         [Cow::Owned(relation_name), Cow::Owned(forward), Cow::Owned(back)]
     }
 }

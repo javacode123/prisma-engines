@@ -379,9 +379,27 @@ model User {
     async fn test_in() {
         let intro_res = test_introspect(
             &r##"datasource db {
-             provider = "postgres"
-  url      = "postgres://*@localhost:5433/zjl"
-               }"##
+  provider = "mysql"
+  url      = "mysql://root:*@localhost:3306/ttt"
+}
+
+model book {
+  id      Int    @id @default(autoincrement())
+  title   String @db.VarChar(100)
+  author  String @db.VarChar(50)
+  user_id Int
+  user    user   @relation(fields: [user_id], references: [id])
+
+  @@index([user_id], map: "user_id")
+}
+
+model user {
+  id       Int    @id @default(autoincrement())
+  username String @db.VarChar(50)
+  password String @db.VarChar(50)
+  book     book[]
+}
+"##
             .to_string(),
         )
         .await;

@@ -463,10 +463,13 @@ pub(crate) async fn query_raw(
 // 手动处理 pg in 查询, 将 query 中的 $k 转为 ($k,$k+1...), 将 params 的 listValue 拆解
 fn convert_in_query(query: &str, params: PrismaListValue) -> (String, PrismaListValue) {
     let mut res = String::new();
+    let mut expect_params: Vec<PrismaValue> = Vec::new();
     let re = Regex::new(r" *\$\d+ *").unwrap();
     let parts: Vec<&str> = re.split(query).collect();
+    if parts.len() < 2 {
+        return (res, expect_params);
+    }
     let mut p_n = 1;
-    let mut expect_params: Vec<PrismaValue> = Vec::new();
     for (i, part) in parts.iter().enumerate() {
         res.push_str(part);
         // 获取参数

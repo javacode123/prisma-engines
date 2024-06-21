@@ -466,14 +466,12 @@ fn convert_in_query(query: &str, params: PrismaListValue) -> (String, PrismaList
     let mut expect_params: Vec<PrismaValue> = Vec::new();
     let re = Regex::new(r" *\$\d+ *").unwrap();
     let parts: Vec<&str> = re.split(query).collect();
-    if parts.len() < 2 {
-        return (res, expect_params);
-    }
+    let valid = parts.len() > 1;
     let mut p_n = 1;
     for (i, part) in parts.iter().enumerate() {
         res.push_str(part);
         // 获取参数
-        if let Some(p) = params.get(i) {
+        if valid && let Some(p) = params.get(i) {
             // 参数为数组
             if let PrismaValue::List(arr) = p {
                 // in 查询, 将 $k 转为 ($k,$k+1...)

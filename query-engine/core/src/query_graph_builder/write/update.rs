@@ -9,6 +9,7 @@ use psl::datamodel_connector::ConnectorCapability;
 use query_structure::{Filter, IntoFilter, Model};
 use schema::{constants::args, QuerySchema};
 use std::convert::TryInto;
+use crate::query_document::{ParsedInputList, ParsedInputValue};
 
 /// Creates an update record query and adds it to the query graph, together with it's nested queries and companion read query.
 pub(crate) fn update_record(
@@ -165,6 +166,80 @@ pub fn update_many_records(
             ),
         )?;
     }
+
+    Ok(())
+}
+
+/// Creates an batch update many record query and adds it to the query graph.
+pub fn batch_update_many_records(
+    graph: &mut QueryGraph,
+    query_schema: &QuerySchema,
+    model: Model,
+    mut field: ParsedField<'_>,
+) -> QueryGraphBuilderResult<()> {
+    let data_list: ParsedInputList<'_> = match field.arguments.lookup(args::DATA) {
+        Some(data) => utils::coerce_vec(data.value),
+        None => vec![],
+    };
+    for item in data_list {
+    let item_map:ParsedInputMap<'_>  = item.try_into()?;
+        graph.flag_transactional();
+        // "where"
+        let filter = match item_map.get(args::WHERE) {
+            Some(where_arg) => match where_arg {
+                ParsedInputValue::Map(m) => {
+                    extract_filter(m.clone(), &model)?
+                },
+                _ => {
+                     Filter::empty()
+                }
+            },
+            None => Filter::empty(),
+        };
+
+        // "data"
+        let data_map: ParsedInputMap<'_> = match item_map.get(args::DATA) {
+            Some(data) => match data {
+                ParsedInputValue::Map(m) => {
+                    m.clone()
+                },
+                _=> {
+                    ParsedInputMap{ tag: None, map: Default::default() }
+                }
+            }
+            _=> {
+                ParsedInputMap{ tag: None, map: Default::default() }
+            },
+        };
+
+        if query_schema.relation_mode().uses_foreign_keys() {
+            update_many_record_node(graph, query_schema, filter, model.clone(), data_map)?;
+        } else {
+            let pre_read_node = graph.create_node(utils::read_ids_infallible(
+                model.clone(),
+                model.primary_identifier(),
+                filter,
+            ));
+            let update_many_node = update_many_record_node(graph, query_schema, Filter::empty(), model.clone(), data_map)?;
+
+            utils::insert_emulated_on_update(graph, query_schema, &model, &pre_read_node, &update_many_node)?;
+
+            graph.create_edge(
+                &pre_read_node,
+                &update_many_node,
+                QueryGraphDependency::ProjectedDataDependency(
+                    model.primary_identifier(),
+                    Box::new(move |mut update_node, parent_ids| {
+                        if let Node::Query(Query::Write(WriteQuery::UpdateManyRecords(ref mut ur))) = update_node {
+                            ur.record_filter = parent_ids.into();
+                        }
+                        Ok(update_node)
+                    }),
+                ),
+            )?;
+        }
+
+    };
 
     Ok(())
 }

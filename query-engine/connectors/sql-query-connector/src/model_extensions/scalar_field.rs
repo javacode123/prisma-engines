@@ -1,3 +1,4 @@
+use bigdecimal::ToPrimitive;
 use std::str::FromStr;
 
 use crate::context::Context;
@@ -5,7 +6,7 @@ use chrono::Utc;
 use geozero::{geojson::GeoJson, ToWkt};
 use prisma_value::PrismaValue;
 use quaint::{
-    ast::{EnumName, GeometryValue, Value, ValueType},
+    ast::{EnumName, GeometryDValue, GeometryValue, Value, ValueType},
     prelude::{EnumVariant, TypeDataLength, TypeFamily},
 };
 use query_structure::{ScalarField, TypeIdentifier};
@@ -73,6 +74,15 @@ impl ScalarFieldExt for ScalarField {
                     _ => Value::geometry(geometry),
                 }
             }
+            (PrismaValue::GeometryDistance(d), _) => {
+                let geometry = GeometryValue::from_str(&d.point).unwrap();
+                ValueType::DGeometry(Some(GeometryDValue {
+                    point: geometry,
+                    distance: d.distance,
+                }))
+            }
+            .into_value(),
+
             (PrismaValue::Null, ident) => match ident {
                 TypeIdentifier::String => Value::null_text(),
                 TypeIdentifier::Float => Value::null_numeric(),
@@ -162,6 +172,15 @@ pub fn convert_lossy<'a>(pv: PrismaValue) -> Value<'a> {
         // TODO@geom: Fix this when we know how to cast GeoJSON to an appropriate DB value
         PrismaValue::GeoJson(s) => Value::json(serde_json::from_str(&s).unwrap()),
         PrismaValue::Geometry(s) => Value::geometry(GeometryValue::from_str(&s).unwrap()),
+        PrismaValue::GeometryDistance(d) => {
+            let mut map = serde_json::Map::with_capacity(2);
+            map.insert(
+                "distance".to_string(),
+                serde_json::Value::Number(serde_json::Number::from_f64(d.distance.to_f64().unwrap()).unwrap()),
+            );
+            map.insert("point".to_string(), serde_json::Value::String(d.point.to_string()));
+            Value::json(serde_json::Value::Object(map))
+        }
         PrismaValue::Null => Value::null_int32(), // Can't tell which type the null is supposed to be.
         PrismaValue::Object(_) => unimplemented!(),
     }

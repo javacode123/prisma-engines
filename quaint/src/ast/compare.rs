@@ -62,6 +62,8 @@ pub enum GeometryCompare<'a> {
     Valid(Box<Expression<'a>>),
     NotValid(Box<Expression<'a>>),
     Within(Box<Expression<'a>>, Box<Expression<'a>>),
+    DWithin(Box<Expression<'a>>, Box<Expression<'a>>),
+    NotDWithin(Box<Expression<'a>>, Box<Expression<'a>>),
     NotWithin(Box<Expression<'a>>, Box<Expression<'a>>),
     Intersects(Box<Expression<'a>>, Box<Expression<'a>>),
     NotIntersects(Box<Expression<'a>>, Box<Expression<'a>>),
@@ -879,6 +881,27 @@ pub trait Comparable<'a> {
     fn geometry_within<T>(self, geom: T) -> Compare<'a>
     where
         T: Into<Expression<'a>>;
+    /// Tests if the left side geometry contains the right side geometry.
+    ///
+    /// ```rust
+    /// # use quaint::{ast::*, visitor::{Visitor, Sqlite}};
+    /// # fn main() -> Result<(), quaint::error::Error> {
+    /// let query = Select::from_table("users").so_that("geom".geometry_within(geom_from_text("POINT(0 0)", 4326, false)));
+    /// let (sql, params) = Sqlite::build(query)?;
+    ///
+    /// assert_eq!("SELECT `users`.* FROM `users` WHERE ST_DWithin(`geom`,ST_GeomFromText(?,?),100)", sql);
+    ///
+    /// assert_eq!(vec![
+    ///    Value::from("POINT(0 0)"),
+    ///    Value::from(4326)
+    ///  ], params);
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn geometry_dwithin<T>(self, geom: T) -> Compare<'a>
+    where
+        T: Into<Expression<'a>>;
 
     /// Tests if the left side geometry doesn't contain the right side geometry.
     ///
@@ -899,6 +922,10 @@ pub trait Comparable<'a> {
     /// # }
     /// ```
     fn geometry_not_within<T>(self, geom: T) -> Compare<'a>
+    where
+        T: Into<Expression<'a>>;
+
+    fn geometry_not_dwithin<T>(self, geom: T) -> Compare<'a>
     where
         T: Into<Expression<'a>>;
 
@@ -1345,6 +1372,24 @@ where
         let col: Column<'a> = self.into();
         let val: Expression<'a> = col.into();
         val.geometry_within(geom)
+    }
+
+    fn geometry_dwithin<T>(self, geom: T) -> Compare<'a>
+    where
+        T: Into<Expression<'a>>,
+    {
+        let col: Column<'a> = self.into();
+        let val: Expression<'a> = col.into();
+        val.geometry_within(geom)
+    }
+
+    fn geometry_not_dwithin<T>(self, geom: T) -> Compare<'a>
+    where
+        T: Into<Expression<'a>>,
+    {
+        let col: Column<'a> = self.into();
+        let val: Expression<'a> = col.into();
+        val.geometry_not_dwithin(geom)
     }
 
     fn geometry_not_within<T>(self, geom: T) -> Compare<'a>

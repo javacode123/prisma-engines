@@ -53,6 +53,7 @@ pub use select::Select;
 pub use table::*;
 pub use union::Union;
 pub use update::*;
+pub use values::GeometryDValue;
 pub use values::GeometryValue;
 pub(crate) use values::Params;
 pub use values::{IntoRaw, Raw, Value, ValueType, Values};

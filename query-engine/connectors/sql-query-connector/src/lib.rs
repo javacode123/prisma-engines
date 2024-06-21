@@ -13,7 +13,7 @@ mod nested_aggregations;
 mod ordering;
 mod query_arguments_ext;
 mod query_builder;
-mod query_ext;
+pub mod query_ext;
 mod row;
 mod sql_trace;
 mod value;

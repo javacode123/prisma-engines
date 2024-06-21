@@ -312,6 +312,7 @@ impl<'a> ToSql for Value<'a> {
                 .map(|dt| ToSqlOutput::from(dt.timestamp_millis())),
             ValueType::Geometry(_) => panic!("Cannot handle raw Geometry"),
             ValueType::Geography(_) => panic!("Cannot handle raw Geography"),
+            ValueType::DGeometry(_) => panic!("Cannot handle raw Geography"),
         };
 
         match value {

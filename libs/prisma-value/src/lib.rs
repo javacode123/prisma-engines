@@ -15,6 +15,12 @@ pub type PrismaValueResult<T> = std::result::Result<T, ConversionFailure>;
 pub type PrismaListValue = Vec<PrismaValue>;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
+pub struct GeoDWithinValue {
+    pub point: String,
+    #[serde(serialize_with = "serialize_decimal", deserialize_with = "deserialize_decimal")]
+    pub distance: BigDecimal,
+}
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 #[serde(untagged)]
 pub enum PrismaValue {
     String(String),
@@ -26,6 +32,8 @@ pub enum PrismaValue {
     Json(String),
     GeoJson(String),
     Geometry(String),
+    // 解析 geoDWithin
+    GeometryDistance(GeoDWithinValue),
 
     /// A collections of key-value pairs constituting an object.
     #[serde(serialize_with = "serialize_object")]
@@ -169,11 +177,13 @@ where
     encode_bytes(bytes).serialize(serializer)
 }
 
+// 如果结果是 null 返回: {}
 fn serialize_null<S>(serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    Option::<u8>::None.serialize(serializer)
+    let r = serializer.serialize_map(Some(0))?;
+    r.end()
 }
 
 fn serialize_bigint<S>(int: &i64, serializer: S) -> Result<S::Ok, S::Error>
@@ -265,6 +275,14 @@ impl PrismaValue {
     pub fn as_string(&self) -> Option<&str> {
         match self {
             PrismaValue::String(s) => Some(s),
+            PrismaValue::Geometry(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    pub fn as_decimal(&self) -> Option<BigDecimal> {
+        match self {
+            PrismaValue::Float(d) => Some(d.clone()),
             _ => None,
         }
     }
@@ -337,6 +355,9 @@ impl fmt::Display for PrismaValue {
             PrismaValue::Json(x) => x.fmt(f),
             PrismaValue::GeoJson(x) => x.fmt(f),
             PrismaValue::Geometry(x) => x.fmt(f),
+            PrismaValue::GeometryDistance(x) => {
+                write!(f, "GeoDWithinValue {{ point: {}, distance: {},}}", x.point, x.distance,)
+            }
             PrismaValue::BigInt(x) => x.fmt(f),
             PrismaValue::List(x) => {
                 let as_string = format!("{x:?}");

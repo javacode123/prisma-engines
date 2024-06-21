@@ -1,3 +1,4 @@
+use crate::query_document::ParsedInputValue::Single;
 use crate::{ParsedInputMap, ParsedInputValue, QueryGraphBuilderError, QueryGraphBuilderResult};
 use query_structure::{prelude::ParentContainer, *};
 use schema::constants::{aggregations, filters, json_null};
@@ -180,6 +181,13 @@ impl<'a> ScalarFilterParser<'a> {
                     Ok(vec![field.geometry_not_within(self.as_condition_value(input, false)?)])
                 } else {
                     Ok(vec![field.geometry_within(self.as_condition_value(input, false)?)])
+                }
+            }
+            filters::GEO_DWITHIN => {
+                if self.reverse() {
+                    Ok(vec![field.geometry_not_dwithin(self.as_condition_value(input, false)?)])
+                } else {
+                    Ok(vec![field.geometry_dwithin(self.as_condition_value(input, false)?)])
                 }
             }
             filters::GEO_INTERSECTS => {
@@ -439,6 +447,26 @@ impl<'a> ScalarFilterParser<'a> {
 
         match input {
             ParsedInputValue::Map(mut map) => {
+                // 解析 GEO Distance 数据
+                if map.contains_key(filters::GEO_POINT) && map.contains_key(filters::GEO_DISTANCE) {
+                    let point_value = map.remove(filters::GEO_POINT).unwrap();
+                    let distance_value = map.remove(filters::GEO_DISTANCE).unwrap();
+                    return match point_value {
+                        Single(p) => {
+                            let p = p.as_string().unwrap();
+                            match distance_value {
+                                Single(d) => {
+                                    Ok(ConditionValue::value(PrismaValue::GeometryDistance(GeoDWithinValue {
+                                        point: p.to_string(),
+                                        distance: d.as_decimal().unwrap(),
+                                    })))
+                                }
+                                _ => Err(QueryGraphBuilderError::InputError("invalid distance".to_string())),
+                            }
+                        }
+                        _ => Err(QueryGraphBuilderError::InputError("invalid geoPoint".to_string())),
+                    };
+                }
                 let field_ref_name = map.remove(filters::UNDERSCORE_REF).unwrap();
                 let field_ref_name = PrismaValue::try_from(field_ref_name)?.into_string().unwrap();
                 let field_ref = field.container().find_field(&field_ref_name);

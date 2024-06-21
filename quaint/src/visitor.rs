@@ -170,6 +170,17 @@ pub trait Visitor<'a> {
         })
     }
 
+    fn visit_geometry_dwithin(&mut self, left: Expression<'a>, right: Expression<'a>, not: bool) -> Result {
+        if not {
+            self.write("NOT ")?;
+        }
+        self.surround_with("ST_DWithin(", ")", |s| {
+            s.visit_expression(left)?;
+            s.write(",")?;
+            s.visit_expression(right)
+        })
+    }
+
     fn visit_geometry_intersects(&mut self, left: Expression<'a>, right: Expression<'a>, not: bool) -> Result {
         if not {
             self.write("NOT ")?;
@@ -219,6 +230,15 @@ pub trait Visitor<'a> {
             ValueType::EnumArray(Some(variants), name) => self.visit_parameterized_enum_array(variants, name),
             ValueType::Geometry(Some(geom)) => self.visit_function(geom_from_text(geom.wkt, geom.srid, false)),
             ValueType::Geography(Some(geom)) => self.visit_function(geom_from_text(geom.wkt, geom.srid, true)),
+            ValueType::DGeometry(Some(geom)) => {
+                self.visit_function(geom_from_text(geom.point.wkt, geom.point.srid, false))
+                    .expect("TODO: panic message");
+                self.write(",").expect("TODO: panic message");
+                self.visit_expression(Expression {
+                    kind: ExpressionKind::Parameterized(ValueType::numeric(geom.distance).into_value()),
+                    alias: None,
+                })
+            }
             ValueType::Geometry(None) | ValueType::Geography(None) => self.write("NULL"),
             _ => {
                 self.add_parameter(value);
@@ -1001,6 +1021,8 @@ pub trait Visitor<'a> {
                 GeometryCompare::Valid(left) => self.visit_geometry_valid(*left, false),
                 GeometryCompare::NotValid(left) => self.visit_geometry_valid(*left, true),
                 GeometryCompare::Within(left, right) => self.visit_geometry_within(*left, *right, false),
+                GeometryCompare::DWithin(left, right) => self.visit_geometry_dwithin(*left, *right, false),
+                GeometryCompare::NotDWithin(left, right) => self.visit_geometry_dwithin(*left, *right, true),
                 GeometryCompare::NotWithin(left, right) => self.visit_geometry_within(*left, *right, true),
                 GeometryCompare::Intersects(left, right) => self.visit_geometry_intersects(*left, *right, false),
                 GeometryCompare::NotIntersects(left, right) => self.visit_geometry_intersects(*left, *right, true),

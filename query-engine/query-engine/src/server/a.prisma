@@ -1,10 +1,21 @@
 datasource db {
   provider = "mysql"
-  url      = "mysql://root:*@localhost:3306/geo"
+  url      = "mysql://root:*@localhost:3306/ttt"
 }
 
-model places {
-  id       Int       @id @default(autoincrement())
-  name     String?   @db.VarChar(255)
-  location Geometry? @db.Point
+model book {
+  id      Int    @id @default(autoincrement())
+  title   String @db.VarChar(100)
+  author  String @db.VarChar(50)
+  user_id Int
+  user    user?  @relation(fields: [user_id], references: [id])
+
+  @@index([user_id], map: "user_id")
+}
+
+model user {
+  id       Int    @id @default(autoincrement())
+  username String @db.VarChar(50)
+  password String @db.VarChar(50)
+  book     book[]
 }

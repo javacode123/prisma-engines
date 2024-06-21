@@ -64,6 +64,11 @@ impl<'a> From<&'a str> for EnumVariant<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct EnumNameA<'a> {
+    pub name: Cow<'a, str>,
+    pub schema_name: Option<Cow<'a, str>>,
+}
+#[derive(Debug, Clone, PartialEq)]
 pub struct EnumName<'a> {
     pub name: Cow<'a, str>,
     pub schema_name: Option<Cow<'a, str>>,

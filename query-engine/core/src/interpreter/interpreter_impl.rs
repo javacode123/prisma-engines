@@ -172,12 +172,13 @@ impl<'conn> QueryInterpreter<'conn> {
         env: Env,
         level: usize,
         trace_id: Option<String>,
+        batch_update_many: bool,
     ) -> BoxFuture<'_, InterpretationResult<ExpressionResult>> {
         match exp {
             Expression::Func { func } => {
                 let expr = func(env.clone());
 
-                Box::pin(async move { self.interpret(expr?, env, level, trace_id).await })
+                Box::pin(async move { self.interpret(expr?, env, level, trace_id,batch_update_many).await })
             }
 
             Expression::Sequence { seq } if seq.is_empty() => Box::pin(async { Ok(ExpressionResult::Empty) }),
@@ -189,11 +190,23 @@ impl<'conn> QueryInterpreter<'conn> {
                     let mut results = Vec::with_capacity(seq.len());
 
                     for expr in seq {
-                        results.push(self.interpret(expr, env.clone(), level + 1, trace_id.clone()).await?);
+                        results.push(self.interpret(expr, env.clone(), level + 1, trace_id.clone(),batch_update_many).await?);
                     }
 
-                    // Last result gets returned
-                    Ok(results.pop().unwrap())
+                    if !batch_update_many {
+                        // Last result gets returned
+                        return Ok(results.pop().unwrap());
+                    }
+
+                    let mut count_sum = 0;
+                    for r in results.clone() {
+                        if let ExpressionResult::Query(QueryResult::Count(cnt)) = r {
+                            count_sum += cnt;
+                        } else {
+                            return Ok(results.pop().unwrap());
+                        }
+                    }
+                    Ok(ExpressionResult::Query(QueryResult::Count(count_sum)))
                 })
             }
 
@@ -209,7 +222,7 @@ impl<'conn> QueryInterpreter<'conn> {
                         self.log_line(level + 1, || format!("bind {} ", &binding.name));
 
                         let result = self
-                            .interpret(binding.expr, env.clone(), level + 2, trace_id.clone())
+                            .interpret(binding.expr, env.clone(), level + 2, trace_id.clone(),batch_update_many)
                             .await?;
                         inner_env.insert(binding.name, result);
                     }
@@ -221,7 +234,7 @@ impl<'conn> QueryInterpreter<'conn> {
                         Expression::Sequence { seq: expressions }
                     };
 
-                    self.interpret(next_expression, inner_env, level + 1, trace_id).await
+                    self.interpret(next_expression, inner_env, level + 1, trace_id,batch_update_many).await
                 })
             }
 
@@ -272,10 +285,10 @@ impl<'conn> QueryInterpreter<'conn> {
                 self.log_line(level, || "IF");
 
                 if func() {
-                    self.interpret(Expression::Sequence { seq: then }, env, level + 1, trace_id)
+                    self.interpret(Expression::Sequence { seq: then }, env, level + 1, trace_id,batch_update_many)
                         .await
                 } else {
-                    self.interpret(Expression::Sequence { seq: elze }, env, level + 1, trace_id)
+                    self.interpret(Expression::Sequence { seq: elze }, env, level + 1, trace_id,batch_update_many)
                         .await
                 }
             }),

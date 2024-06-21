@@ -17,6 +17,9 @@ use tracing::{info_span, Span};
 use tracing_futures::Instrument;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
+pub const QUERY_KEY: &str = "query";
+pub const PARAMETERS_KEY: &str = "parameters";
+
 #[async_trait]
 impl<Q: Queryable + ?Sized> QueryExt for Q {
     async fn filter(
@@ -88,8 +91,8 @@ impl<Q: Queryable + ?Sized> QueryExt for Q {
         _features: psl::PreviewFeatures,
     ) -> std::result::Result<usize, crate::error::RawError> {
         // Unwrapping query & params is safe since it's already passed the query parsing stage
-        let query = inputs.remove("query").unwrap().into_string().unwrap();
-        let params = inputs.remove("parameters").unwrap().into_list().unwrap();
+        let query = inputs.remove(QUERY_KEY).unwrap().into_string().unwrap();
+        let params = inputs.remove(PARAMETERS_KEY).unwrap().into_list().unwrap();
         let params = params.into_iter().map(convert_lossy).collect_vec();
         let changes = AssertUnwindSafe(self.execute_raw_typed(&query, &params))
             .catch_unwind()

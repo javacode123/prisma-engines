@@ -124,6 +124,7 @@ impl<'a> Visitor<'a> for Sqlite<'a> {
             ValueType::Geography(g) => g
                 .as_ref()
                 .map(|g| self.visit_function(geom_from_text(g.wkt.clone().raw(), g.srid.raw(), true))),
+            ValueType::DGeometry(_) => panic!("Cannot handle raw Geography"),
         };
 
         match res {

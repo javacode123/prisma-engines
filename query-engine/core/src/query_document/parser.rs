@@ -915,6 +915,7 @@ pub(crate) mod conversions {
             PrismaValue::Float(_) => "Float".to_string(),
             PrismaValue::BigInt(_) => "BigInt".to_string(),
             PrismaValue::Bytes(_) => "Bytes".to_string(),
+            PrismaValue::GeometryDistance(_) => "GeometryDistance".to_string(),
         }
     }
 

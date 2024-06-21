@@ -379,10 +379,27 @@ model User {
     async fn test_in() {
         let intro_res = test_introspect(
             &r##"datasource db {
-              provider = "mysql"
-                url      = "mysql://root:*@localhost:3306/geo"
-        
-               }"##
+  provider = "mysql"
+  url      = "mysql://root:*@localhost:3306/ttt"
+}
+
+model book {
+  id      Int    @id @default(autoincrement())
+  title   String @db.VarChar(100)
+  author  String @db.VarChar(50)
+  user_id Int
+  user    user   @relation(fields: [user_id], references: [id])
+
+  @@index([user_id], map: "user_id")
+}
+
+model user {
+  id       Int    @id @default(autoincrement())
+  username String @db.VarChar(50)
+  password String @db.VarChar(50)
+  book     book[]
+}
+"##
             .to_string(),
         )
         .await;
@@ -397,14 +414,21 @@ model User {
         tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).init();
         let source = r##"
         datasource db {
-  provider = "mysql"
-  url      = "mysql://root:*@localhost:3306/geo"
+  provider = "postgres"
+  url      = "postgres:/*@localhost:5433/zjl"
 }
-
-model places {
-  id       Int       @id @default(autoincrement())
-  name     String?   @db.VarChar(255)
-  location Geometry? @db.Point
+model Account {
+    membershipEndTime DateTime?
+    createdAt DateTime @default(now())
+    updatedAt DateTime
+    deletedAt DateTime?
+    membershipId String? @db.Uuid
+    leftDuration Decimal @default(0) @db.Decimal(13, 3)
+    typeId String
+    id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    type String @default("User")
+    
+    @@unique([type, typeId])
 }
         "##;
         let res = test_push(&source).await;

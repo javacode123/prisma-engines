@@ -28,6 +28,7 @@ impl<'a> IntoSql<'a> for &'a Value<'a> {
             ValueType::Time(val) => val.into_sql(),
             ValueType::Geometry(_) => panic!("Cannot handle raw Geometry"),
             ValueType::Geography(_) => panic!("Cannot handle raw Geography"),
+            ValueType::DGeometry(_) => panic!("Cannot handle raw Geography"),
         }
     }
 }

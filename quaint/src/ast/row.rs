@@ -396,6 +396,22 @@ impl<'a> Comparable<'a> for Row<'a> {
         value.geometry_within(geom)
     }
 
+    fn geometry_dwithin<T>(self, geom: T) -> Compare<'a>
+    where
+        T: Into<Expression<'a>>,
+    {
+        let value: Expression<'a> = self.into();
+        value.geometry_dwithin(geom)
+    }
+
+    fn geometry_not_dwithin<T>(self, geom: T) -> Compare<'a>
+    where
+        T: Into<Expression<'a>>,
+    {
+        let value: Expression<'a> = self.into();
+        value.geometry_not_dwithin(geom)
+    }
+
     fn geometry_not_within<T>(self, geom: T) -> Compare<'a>
     where
         T: Into<Expression<'a>>,

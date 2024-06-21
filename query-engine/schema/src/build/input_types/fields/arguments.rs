@@ -65,6 +65,29 @@ pub(crate) fn update_many_arguments(ctx: &QuerySchema, model: Model) -> Vec<Inpu
     ]
 }
 
+/// Builds batch BatchUpdateManyInput arguments intended for the batch update many field.
+pub(crate) fn batch_update_many_arguments(ctx: &QuerySchema, model: Model) -> Vec<InputField<'_>> {
+    let input_fields = update_many_arguments(ctx, model.clone());
+    vec![input_field(args::DATA.to_owned(), vec![InputType::list(InputType::object(batch_update_many_object(model, input_fields)))], None, None)]
+}
+
+/// Builds "BatchUpdateMany<y>Input" input object type.
+/// Simple combination object of "where" and "data"
+pub(crate) fn batch_update_many_object(
+    model: Model,
+    fields: Vec<InputField<'_>>,
+) -> InputObjectType<'_> {
+    let ident = Identifier::new_prisma(IdentifierType::UpdateManyObjectInput(
+        model,
+    ));
+
+    let mut input_object = init_input_object_type(ident);
+    input_object.set_fields(move || {
+        fields
+    });
+    input_object
+}
+
 /// Builds "where" argument intended for the delete many field.
 pub(crate) fn delete_many_arguments(ctx: &QuerySchema, model: Model) -> Vec<InputField<'_>> {
     let where_arg = where_argument(ctx, &model);

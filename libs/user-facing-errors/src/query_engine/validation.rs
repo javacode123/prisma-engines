@@ -196,7 +196,7 @@ impl ValidationError {
                 value, expected_argument_type, &err_msg
             );
             let argument = ArgumentDescription::new(*argument_name, vec![Cow::Borrowed(expected_argument_type)]);
-            let meta = json!({"argumentPath": argument_path, "argument": argument, "selectionPath": selection_path, "underlyingError": &err_msg});
+            let meta = json!({"value", value, "argumentPath": argument_path, "argument": argument, "selectionPath": selection_path, "underlyingError": &err_msg});
             (message, Some(meta))
         } else {
             let message = format!(
@@ -204,7 +204,7 @@ impl ValidationError {
                 value, &expected_argument_type
             );
             let argument = ArgumentDescription::new(*argument_name, vec![Cow::Borrowed(expected_argument_type)]);
-            let meta = json!({"argumentPath": argument_path, "argument": argument, "selectionPath": selection_path, "underlyingError": serde_json::Value::Null});
+            let meta = json!({"value", value, "argumentPath": argument_path, "argument": argument, "selectionPath": selection_path, "underlyingError": serde_json::Value::Null});
             (message, Some(meta))
         };
         ValidationError {
@@ -466,7 +466,7 @@ impl ValidationError {
         ValidationError {
             kind: ValidationErrorKind::ValueTooLarge,
             message,
-            meta: Some(json!({"argumentPath": argument_path, "argument": argument, "selectionPath": selection_path})),
+            meta: Some(json!({"value", value, "argumentPath": argument_path, "argument": argument, "selectionPath": selection_path})),
         }
     }
 }

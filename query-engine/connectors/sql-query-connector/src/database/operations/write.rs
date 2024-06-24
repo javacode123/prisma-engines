@@ -467,6 +467,9 @@ fn convert_in_query(query: &str, params: PrismaListValue) -> (String, PrismaList
     let re = Regex::new(r" *\$\d+ *").unwrap();
     let parts: Vec<&str> = re.split(query).collect();
     let invalid = parts.len() < 2;
+    if invalid {
+        expect_params = params.clone()
+    }
     let mut p_n = 1;
     for (i, part) in parts.iter().enumerate() {
         res.push_str(part);

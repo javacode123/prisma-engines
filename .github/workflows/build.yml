@@ -98,6 +98,21 @@ jobs:
             ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/schema-engine
             ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/query-engine
             # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/prisma-fmt
+      - name: Gzip Artifacts
+        run: |
+          mkdir -p release
+          gzip -cvk target/${{ matrix.target.target_path }}/release/schema-engine > release/${{ matrix.target.name }}-schema-engine.gz
+          gzip -cvk target/${{ matrix.target.target_path }}/release/query-engine > release/${{ matrix.target.name }}-query-engine.gz
+      - name: R2 Upload Action
+        uses: ryand56/r2-upload-action@latest
+        with:
+          r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket: ${{ secrets.R2_BUCKET }}
+          source-dir: release
+          destination-dir: ./${{github.sha}}
+
   build-darwin:
     name: "${{ matrix.target.name }} (on branch ${{ github.event.ref }} for commit ${{ github.event.inputs.commit }})"
     env:
@@ -151,6 +166,20 @@ jobs:
             # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/prisma-fmt
             ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/query-engine
             # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/libquery_engine.dylib
+      - name: Gzip Artifacts
+        run: |
+          mkdir -p release
+          gzip -cvk target/${{ matrix.target.target_path }}/release/schema-engine > release/${{ matrix.target.name }}-schema-engine.gz
+          gzip -cvk target/${{ matrix.target.target_path }}/release/query-engine > release/${{ matrix.target.name }}-query-engine.gz
+      - name: R2 Upload Action
+        uses: ryand56/r2-upload-action@latest
+        with:
+          r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket: ${{ secrets.R2_BUCKET }}
+          source-dir: release
+          destination-dir: ./${{github.sha}}
 
   build-windows:
     name: "${{ matrix.target.name }} (on branch ${{ github.event.ref }} for commit ${{ github.event.inputs.commit }})"
@@ -202,3 +231,17 @@ jobs:
             ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/schema-engine.exe
             ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/query-engine.exe
             # ${{ github.workspace }}/target/${{ matrix.target.target_path }}/release/schema-engine.dll
+      - name: Gzip Artifacts
+        run: |
+          mkdir -p release
+          gzip -cvk target/${{ matrix.target.target_path }}/release/schema-engine.exe > release/${{ matrix.target.name }}-schema-engine.exe.gz
+          gzip -cvk target/${{ matrix.target.target_path }}/release/query-engine.exe > release/${{ matrix.target.name }}-query-engine.exe.gz
+      - name: R2 Upload Action
+        uses: ryand56/r2-upload-action@latest
+        with:
+          r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket: ${{ secrets.R2_BUCKET }}
+          source-dir: release
+          destination-dir: ./${{github.sha}}

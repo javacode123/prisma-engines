@@ -177,13 +177,11 @@ where
     encode_bytes(bytes).serialize(serializer)
 }
 
-// 如果结果是 null 返回: {}
 fn serialize_null<S>(serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
+    where
+        S: Serializer,
 {
-    let r = serializer.serialize_map(Some(0))?;
-    r.end()
+    Option::<u8>::None.serialize(serializer)
 }
 
 fn serialize_bigint<S>(int: &i64, serializer: S) -> Result<S::Ok, S::Error>

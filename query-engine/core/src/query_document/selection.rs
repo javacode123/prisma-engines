@@ -51,7 +51,15 @@ impl Selection {
         self.nested_selections = self
             .nested_selections
             .into_iter()
-            .unique_by(|s| s.name.clone())
+            .enumerate()
+            .unique_by(|(i, v)| {
+                return if v.name.starts_with("_") {
+                    i.to_string()
+                } else {
+                    v.name.clone()
+                };
+            })
+            .map(|(_, v)| v)
             .collect();
 
         self

@@ -193,8 +193,9 @@ pub fn render_quaint_error(kind: &ErrorKind, connection_info: &ConnectionInfo) -
             }))
         }
 
-        (ErrorKind::PoolTimeout { max_open, timeout, .. }, _) => Some(KnownError::new(query_engine::PoolTimeout {
+        (ErrorKind::PoolTimeout { max_open, in_use, timeout, .. }, _) => Some(KnownError::new(query_engine::PoolTimeout {
             connection_limit: *max_open,
+            connection_used: *in_use,
             timeout: *timeout,
         })),
 

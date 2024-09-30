@@ -134,6 +134,7 @@ jobs:
 
     steps:
       - name: Output link to real commit
+        if: ${{ github.event.inputs.commit }}
         run: echo ${{ github.repository }}/commit/${{ github.event.inputs.commit }}
 
       - name: Checkout ${{ github.event.inputs.commit }}
@@ -155,7 +156,7 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-intel-cargo-${{ hashFiles('**/Cargo.lock') }}
-
+      - run: cargo clean
       - run: |
           cargo build --release -p query-engine -p schema-engine-cli ${{ matrix.target.target_string }}
       - uses: actions/upload-artifact@v3
@@ -201,6 +202,7 @@ jobs:
 
     steps:
       - name: Output link to real commit
+        if: ${{ github.event.inputs.commit }}
         run: echo ${{ github.repository }}/commit/${{ github.event.inputs.commit }}
 
       - name: Checkout ${{ github.event.inputs.commit }}
@@ -222,6 +224,7 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+      - run: cargo clean
       - run: cargo build --release -p query-engine -p schema-engine-cli ${{ matrix.target.target_string }}
 
       - uses: actions/upload-artifact@v3

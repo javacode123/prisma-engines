@@ -238,11 +238,11 @@ jobs:
           mkdir -p release
           gzip -cvk target/${{ matrix.target.target_path }}/release/schema-engine.exe > release/${{ matrix.target.name }}-schema-engine.exe.gz
           gzip -cvk target/${{ matrix.target.target_path }}/release/query-engine.exe > release/${{ matrix.target.name }}-query-engine.exe.gz
-      - name: Tree files
-        run: |
-          tree target
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+      #- name: Tree files
+      #  run: |
+      #    tree target
+      #- name: Setup tmate session
+      #  uses: mxschmitt/action-tmate@v3
       - name: R2 Upload Action
         uses: fireboomio/r2-upload-action@v0.1.1
         with:

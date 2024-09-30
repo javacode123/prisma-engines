@@ -156,7 +156,7 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-intel-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: cargo update
+
       - run: |
           cargo build --release -p query-engine -p schema-engine-cli ${{ matrix.target.target_string }}
       - uses: actions/upload-artifact@v3
@@ -224,7 +224,6 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - run: cargo update
       - run: cargo build --release -p query-engine -p schema-engine-cli ${{ matrix.target.target_string }}
 
       - uses: actions/upload-artifact@v3

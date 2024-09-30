@@ -24,7 +24,7 @@ pub struct DestructiveMigrationDetected {
     code = "P3002",
     message = "The attempted migration was rolled back: {database_error}"
 )]
-struct MigrationRollback {
+pub struct MigrationRollback {
     pub database_error: String,
 }
 

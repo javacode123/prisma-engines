@@ -242,7 +242,7 @@ jobs:
       #  run: |
       #    tree target
       - name: Setup tmate session
-       uses: mxschmitt/action-tmate@v3
+        uses: mxschmitt/action-tmate@v3
       - name: R2 Upload Action
         uses: fireboomio/r2-upload-action@v0.1.1
         with:

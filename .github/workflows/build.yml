@@ -244,7 +244,7 @@ jobs:
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
       - name: R2 Upload Action
-        uses: fireboomio/r2-upload-action@v0.1.1
+        uses: fireboomio/r2-upload-action@v1.2.4
         with:
           r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
           r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}

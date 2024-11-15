@@ -172,14 +172,18 @@ fn serialize_aggregations(
 fn write_rel_aggregation_row(row: &RelAggregationRow, map: &mut HashMap<String, Item>) {
     for result in row.iter() {
         match result {
-            RelAggregationResult::Count(rf, count) => match map.get_mut(UNDERSCORE_COUNT) {
+            RelAggregationResult::Count(rf, count, alias) => match map.get_mut(UNDERSCORE_COUNT) {
                 Some(item) => match item {
-                    Item::Map(inner_map) => inner_map.insert(rf.name().to_owned(), Item::Value(count.clone())),
+                    Item::Map(inner_map) => {
+                        let inner_key = alias.clone().unwrap_or_else(|| rf.name().to_owned());
+                        inner_map.insert(inner_key, Item::Value(count.clone()))
+                    }
                     _ => unreachable!(),
                 },
                 None => {
                     let mut inner_map: Map = Map::new();
-                    inner_map.insert(rf.name().to_owned(), Item::Value(count.clone()));
+                    let inner_key = alias.clone().unwrap_or_else(|| rf.name().to_owned());
+                    inner_map.insert(inner_key, Item::Value(count.clone()));
                     map.insert(UNDERSCORE_COUNT.to_owned(), Item::Map(inner_map))
                 }
             },
@@ -298,7 +302,7 @@ fn serialize_objects(
     let nested = std::mem::take(&mut result.nested);
 
     // { <nested field name> -> { parent ID -> items } }
-    let mut nested_mapping: HashMap<String, CheckedItemsWithParents> =
+    let mut nested_mapping: HashMap<String, (CheckedItemsWithParents, String)> =
         process_nested_results(nested, typ, query_schema)?;
 
     // We need the Arcs to solve the issue where we have multiple parents claiming the same data (we want to move the data out of the nested structure
@@ -355,7 +359,7 @@ fn serialize_objects(
             .map(|row| {
                 row.iter()
                     .map(|aggr_result| match aggr_result {
-                        RelAggregationResult::Count(_, _) => UNDERSCORE_COUNT.to_owned(),
+                        RelAggregationResult::Count(_, _, _) => UNDERSCORE_COUNT.to_owned(),
                     })
                     .unique()
                     .collect()
@@ -368,7 +372,7 @@ fn serialize_objects(
         let map = all_fields
             .iter()
             .fold(Map::with_capacity(all_fields.len()), |mut acc, field_name| {
-                acc.insert(field_name.to_owned(), object.remove(field_name).unwrap());
+                acc.insert(field_name.clone(), object.remove(field_name).unwrap());
                 acc
             });
 
@@ -390,17 +394,16 @@ fn serialize_objects(
 /// Unwraps are safe due to query validation.
 fn write_nested_items(
     record_id: &Option<SelectionResult>,
-    items_with_parent: &mut HashMap<String, CheckedItemsWithParents>,
+    items_with_parent: &mut HashMap<String, (CheckedItemsWithParents, String)>,
     into: &mut HashMap<String, Item>,
     enclosing_type: &ObjectType<'_>,
 ) -> crate::Result<()> {
-    for (field_name, inner) in items_with_parent.iter_mut() {
+    for (alias_or_name, (inner, field_name)) in items_with_parent.iter_mut() {
         let val = inner.get(record_id);
-
         // The value must be a reference (or None - handle default), everything else is an error in the serialization logic.
         match val {
             Some(Item::Ref(ref r)) => {
-                into.insert(field_name.to_owned(), Item::Ref(ItemRef::clone(r)));
+                into.insert(alias_or_name.clone(), Item::Ref(ItemRef::clone(r)));
             }
 
             None => {
@@ -411,7 +414,7 @@ fn write_nested_items(
                     _ => return Err(CoreError::null_serialization_error(field_name)),
                 };
 
-                into.insert(field_name.to_owned(), Item::Ref(ItemRef::new(default)));
+                into.insert(alias_or_name.clone(), Item::Ref(ItemRef::new(default)));
             }
             _ => panic!("Invariant error: Nested items have to be wrapped as a Item::Ref."),
         };
@@ -425,7 +428,7 @@ fn process_nested_results(
     nested: Vec<QueryResult>,
     enclosing_type: &ObjectType<'_>,
     query_schema: &QuerySchema,
-) -> crate::Result<HashMap<String, CheckedItemsWithParents>> {
+) -> crate::Result<HashMap<String, (CheckedItemsWithParents, String)>> {
     // For each nested selected field we need to map the parents to their items.
     let mut nested_mapping = HashMap::with_capacity(nested.len());
 
@@ -435,10 +438,11 @@ fn process_nested_results(
         // todo Workaround, tb changed with flat reads.
         if let QueryResult::RecordSelection(Some(ref rs)) = nested_result {
             let name = rs.name.clone();
+            let alias_or_name = rs.alias.clone().unwrap_or_else(|| rs.name.clone());
             let field = enclosing_type.find_field(&name).unwrap();
             let result = serialize_internal(nested_result, field, false, query_schema)?;
 
-            nested_mapping.insert(name, result);
+            nested_mapping.insert(alias_or_name, (result, name));
         }
     }
 

@@ -14,6 +14,8 @@ pub(crate) enum QueryResult {
 // Todo: In theory, much of this info can go into the serializer as soon as the read results are resolved in a flat tree.
 #[derive(Debug, Clone)]
 pub struct RecordSelection {
+    /// alias of the query.
+    pub(crate) alias: Option<String>,
     /// Name of the query.
     pub(crate) name: String,
 

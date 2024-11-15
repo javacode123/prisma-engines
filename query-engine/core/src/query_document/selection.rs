@@ -56,7 +56,7 @@ impl Selection {
                 return if v.name.starts_with("_") {
                     i.to_string()
                 } else {
-                    v.name.clone()
+                    v.alias.clone().unwrap_or_else(|| v.name.clone())
                 };
             })
             .map(|(_, v)| v)

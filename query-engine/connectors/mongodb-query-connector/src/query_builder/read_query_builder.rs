@@ -361,7 +361,7 @@ impl MongoReadQueryBuilder {
     ) -> crate::Result<Self> {
         for aggr in aggregation_selections {
             let join = match aggr {
-                RelAggregationSelection::Count(rf, filter) => {
+                RelAggregationSelection::Count(rf, filter, _) => {
                     let filter = filter
                         .as_ref()
                         .map(|f| MongoFilterVisitor::new(FilterPrefix::default(), false).visit(f.clone()))

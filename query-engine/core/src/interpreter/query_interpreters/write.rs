@@ -54,6 +54,7 @@ async fn create_one(
     let res = tx.create_record(&q.model, q.args, q.selected_fields, trace_id).await?;
 
     Ok(QueryResult::RecordSelection(Some(Box::new(RecordSelection {
+        alias: None,
         name: q.name,
         fields: q.selection_order,
         aggregation_rows: None,
@@ -92,6 +93,7 @@ async fn update_one(
         UpdateRecord::WithSelection(q) if q.name.is_some() => {
             let res = res
                 .map(|res| RecordSelection {
+                    alias: None,
                     name: q.name.unwrap(),
                     fields: q.selection_order,
                     scalars: res.into(),
@@ -128,6 +130,7 @@ async fn native_upsert(
     let scalars = tx.native_upsert_record(query.clone(), trace_id).await?;
 
     Ok(RecordSelection {
+        alias: None,
         name: query.name().to_string(),
         fields: query.selection_order().to_owned(),
         scalars: scalars.into(),

@@ -180,7 +180,7 @@ pub fn collect_relation_aggr_selections(
                         _ => None,
                     };
 
-                    selections.push(RelAggregationSelection::Count(rf, filter));
+                    selections.push(RelAggregationSelection::Count(rf, filter, nested_pair.parsed_field.alias.clone()));
                 }
             }
             field_name => panic!("Unknown field name \"{field_name}\" for a relation aggregation"),

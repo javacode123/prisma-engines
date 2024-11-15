@@ -52,6 +52,7 @@ fn read_one(
                 let nested: Vec<QueryResult> = process_nested(tx, query.nested, Some(&scalars)).await?;
 
                 Ok(RecordSelection {
+                    alias: query.alias,
                     name: query.name,
                     fields: query.selection_order,
                     scalars,
@@ -65,6 +66,7 @@ fn read_one(
             None if query.options.contains(QueryOption::ThrowOnEmpty) => record_not_found(),
 
             None => Ok(QueryResult::RecordSelection(Some(Box::new(RecordSelection {
+                alias: query.alias,
                 name: query.name,
                 fields: query.selection_order,
                 scalars: ManyRecords::default(),
@@ -119,6 +121,7 @@ fn read_many(
         } else {
             let nested: Vec<QueryResult> = process_nested(tx, query.nested, Some(&scalars)).await?;
             Ok(RecordSelection {
+                alias: query.alias,
                 name: query.name,
                 fields: query.selection_order,
                 scalars,
@@ -162,6 +165,7 @@ fn read_related<'conn>(
         let nested: Vec<QueryResult> = process_nested(tx, query.nested, Some(&scalars)).await?;
 
         Ok(RecordSelection {
+            alias: query.alias,
             name: query.name,
             fields: query.selection_order,
             scalars,

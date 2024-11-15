@@ -20,15 +20,15 @@ jobs:
       matrix:
         target:
           - name: "linux-arm64"
-            image: 'prismagraphql/build:linux-static-arm64'
-            target_string: '--target aarch64-unknown-linux-musl'
-            target_path: 'aarch64-unknown-linux-musl'
-            features_string: '--features vendored-openssl'
+            image: "prismagraphql/build:linux-static-arm64"
+            target_string: "--target aarch64-unknown-linux-musl"
+            target_path: "aarch64-unknown-linux-musl"
+            features_string: "--features vendored-openssl"
           - name: "linux-amd64"
-            image: 'prismagraphql/build:linux-static-x64'
-            target_string: '--target x86_64-unknown-linux-musl'
-            target_path: 'x86_64-unknown-linux-musl'
-            features_string: '--features vendored-openssl'
+            image: "prismagraphql/build:linux-static-x64"
+            target_string: "--target x86_64-unknown-linux-musl"
+            target_path: "x86_64-unknown-linux-musl"
+            features_string: "--features vendored-openssl"
     steps:
       - name: Output link to real commit
         if: ${{ github.event.inputs.commit }}
@@ -88,7 +88,7 @@ jobs:
         run: echo "Build command is $COMMAND"
 
       - name: Execute Build command
-        run:  ${{ steps.construct_build_command.outputs.command }}
+        run: ${{ steps.construct_build_command.outputs.command }}
 
       - uses: actions/upload-artifact@v3
         with:
@@ -126,11 +126,11 @@ jobs:
       matrix:
         target:
           - name: "darwin-amd64"
-            target_string: '--target x86_64-apple-darwin'
-            target_path: 'x86_64-apple-darwin'
+            target_string: "--target x86_64-apple-darwin"
+            target_path: "x86_64-apple-darwin"
           - name: "darwin-arm64"
-            target_string: '--target aarch64-apple-darwin'
-            target_path: 'aarch64-apple-darwin'
+            target_string: "--target aarch64-apple-darwin"
+            target_path: "aarch64-apple-darwin"
 
     steps:
       - name: Output link to real commit
@@ -194,11 +194,11 @@ jobs:
       matrix:
         target:
           - name: "windows-amd64"
-            target_string: '--target x86_64-pc-windows-msvc'
-            target_path: 'x86_64-pc-windows-msvc'
-#          - name: "windows-arm64"
-#            target_string: '--target aarch64-pc-windows-msvc'
-#            target_path: 'aarch64-pc-windows-msvc'
+            target_string: "--target x86_64-pc-windows-msvc"
+            target_path: "x86_64-pc-windows-msvc"
+    #          - name: "windows-arm64"
+    #            target_string: '--target aarch64-pc-windows-msvc'
+    #            target_path: 'aarch64-pc-windows-msvc'
 
     steps:
       - name: Output link to real commit
@@ -241,10 +241,10 @@ jobs:
       #- name: Tree files
       #  run: |
       #    tree target
-      #- name: Setup tmate session
-      #  uses: mxschmitt/action-tmate@v3
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
       - name: R2 Upload Action
-        uses: fireboomio/r2-upload-action@v0.1.1
+        uses: fireboomio/r2-upload-action@v1.2.4
         with:
           r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
           r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}

@@ -42,7 +42,7 @@ jobs:
 
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.70.0
+          toolchain: 1.80.0
           override: true
           default: true
 
@@ -71,15 +71,15 @@ jobs:
             $IMAGE \
             bash -c \
               \" \
-              rustup toolchain install 1.70.0 \
-              && rustup default 1.70.0 \
+              rustup toolchain install 1.80.0 \
+              && rustup default 1.80.0 \
               && cargo clean \
               && cargo build --release -p query-engine          --manifest-path query-engine/query-engine/Cargo.toml          $TARGET_STRING $FEATURES_STRING \
               && cargo build --release -p schema-engine-cli     --manifest-path schema-engine/cli/Cargo.toml                  $TARGET_STRING $FEATURES_STRING \
               \" \
             "
           if [[ -n "$TARGET_STRING" ]]; then
-            command=$(echo "$command" | sed "s|rustup default 1.70.0|rustup default 1.70.0 \&\& rustup target add $(echo $TARGET_STRING | awk '{print $NF}')|")
+            command=$(echo "$command" | sed "s|rustup default 1.80.0|rustup default 1.80.0 \&\& rustup target add $(echo $TARGET_STRING | awk '{print $NF}')|")
           fi
           echo "COMMAND=$command" >> "$GITHUB_OUTPUT"
       - name: Show Build Command
